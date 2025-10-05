@@ -1,4 +1,4 @@
-# InvestmentIQ MVAS v3.0
+# InvestmentIQ MVAS 
 
 Multi-Agent Value Assessment System for Investment Intelligence
 
@@ -6,17 +6,17 @@ Multi-Agent Value Assessment System for Investment Intelligence
 
 ## Overview
 
-InvestmentIQ is a professional-grade multi-agent system for investment analysis, combining 5 specialized AI agents with LangGraph orchestration and HuggingFace AI enhancements.
+InvestmentIQ is a multi-agent system for investment analysis, combining 5 specialized AI agents with LangGraph orchestration and HuggingFace AI enhancements.
 
 ### Key Features
 
-- ✅ **LangGraph Orchestration** - Declarative workflow with automatic state management
-- ✅ **5 Specialist Agents** - Financial, Qualitative, Context, Workforce, Market Intelligence
-- ✅ **HuggingFace AI** - FinBERT sentiment analysis + BART text generation
-- ✅ **Signal Fusion** - Weighted ensemble with SHAP-like explanations
-- ✅ **Debate Mechanism** - Automatic conflict detection and resolution
-- ✅ **MCP Tools** - Edgar, NewsAPI, Finnhub integrations
-- ✅ **Free Models** - $0 cost using HuggingFace free tier
+-**LangGraph Orchestration** - Declarative workflow with automatic state management
+-**5 Specialist Agents** - Financial, Qualitative, Context, Workforce, Market Intelligence
+-**HuggingFace AI** - FinBERT sentiment analysis + BART text generation
+-**Signal Fusion** - Weighted ensemble with SHAP-like explanations
+-**Debate Mechanism** - Automatic conflict detection and resolution
+-**MCP Tools** - Edgar, NewsAPI, Finnhub integrations
+-**Free Models** - $0 cost using HuggingFace free tier
 
 ## Quick Start
 
@@ -231,7 +231,6 @@ python backup_manual/test_hf_integration.py
 - **Async/Await** - Efficient async execution
 - **Error Handling** - Graceful fallbacks
 - **Logging** - Comprehensive logging
-- **Professional Standards** - FANG-grade code quality
 
 ## Performance
 
@@ -251,40 +250,7 @@ python backup_manual/test_hf_integration.py
 - **Pydantic** (data validation)
 - **Asyncio** (async execution)
 
-## License
 
-MIT License - See LICENSE file for details
-
-## Contributing
-
-This is a demonstration project for multi-agent systems with LangGraph.
-
-## Version History
-
-### v3.0 (Current) - LangGraph Edition
-- ✅ LangGraph workflow orchestration
-- ✅ HuggingFace AI enhancements
-- ✅ 63% code reduction
-- ✅ Professional architecture
-
-### v2.0 - Manual Orchestration
-- Manual asyncio coordination
-- Custom state management
-- 744 lines orchestrator
-- See `backup_manual/` for reference
-
-### v1.0 - Initial Implementation
-- 3-agent system
-- Basic signal fusion
-- Sample data only
-
-## Support
-
-For questions or issues:
-1. Check documentation in `*.md` files
-2. Review `backup_manual/` for migration details
-3. See `SYSTEM_OVERVIEW.md` for architecture
-4. Check `FINAL_STATUS.md` for current status
 
 ## Acknowledgments
 
@@ -295,6 +261,5 @@ For questions or issues:
 
 ---
 
-**InvestmentIQ v3.0** - Professional Multi-Agent Investment Analysis
+**InvestmentIQ** -  Multi-Agent Investment Analysis
 
-Powered by LangGraph + HuggingFace | Built for FANG-grade Quality
