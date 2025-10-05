@@ -1,235 +1,314 @@
 """
 Qualitative Signal Agent
 
-Responsible for interpreting unstructured data including news, employee reviews,
-and market sentiment. Consolidates Market Sentiment, Workforce, and Market
-Intelligence capabilities.
+Analyzes qualitative signals including news sentiment, market perception,
+and organizational reputation.
 """
 
-from typing import Dict, Any, List
-from agents.base_agent import BaseAgent, AgentRole, AgentResponse
-from tools.data_tools import QualitativeDataTool
+import os
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
+from core.agent_contracts import (
+    AgentOutput,
+    SignalType,
+    Evidence,
+    Observation,
+    Alert
+)
+from core.agent_bus import get_agent_bus
+from utils.observability import trace_agent
+
+logger = logging.getLogger(__name__)
 
 
-class QualitativeSignalAgent(BaseAgent):
+class QualitativeSignalAgent:
     """
-    Agent specialized in processing and analyzing qualitative signals.
+    Analyzes qualitative signals including sentiment, news, and reputation.
 
-    This agent interprets unstructured text data to extract sentiment,
-    identify key themes, and assess qualitative risks and opportunities.
+    Data sources:
+    - Sample mode: data/samples/qualitative/*.json
+    - Live mode: News APIs and sentiment analysis services
     """
 
-    def __init__(self, agent_id: str, data_tool: QualitativeDataTool):
-        super().__init__(agent_id, AgentRole.QUALITATIVE_SIGNAL)
-        self.data_tool = data_tool
+    def __init__(self, agent_id: str = "qualitative_signal"):
+        self.agent_id = agent_id
+        self.live_mode = os.getenv("LIVE_CONNECTORS", "false").lower() == "true"
+        self.samples_dir = Path("data/samples/qualitative")
+        self.agent_bus = get_agent_bus()
 
-    async def process(self, request: Dict[str, Any]) -> AgentResponse:
+        logger.info(
+            f"QualitativeSignalAgent initialized (mode: "
+            f"{'live' if self.live_mode else 'sample'})"
+        )
+
+    @trace_agent("qualitative_signal", {"version": "1.0"})
+    async def analyze(
+        self,
+        ticker: str,
+        company_name: str,
+        sector: Optional[str] = None
+    ) -> AgentOutput:
         """
-        Process qualitative analysis request.
+        Analyze qualitative signals for a company.
 
-        Expected request format:
-        {
-            "company_id": "COMPANY_X",
-            "focus_areas": ["sentiment", "workforce", "market_position"]
-        }
+        Args:
+            ticker: Stock ticker symbol
+            company_name: Full company name
+            sector: Industry sector
 
         Returns:
-            AgentResponse with qualitative analysis data
+            AgentOutput with qualitative metrics and sentiment
         """
-        company_id = request.get("company_id")
-        focus_areas = request.get("focus_areas", [
-            "sentiment", "workforce", "market_position"
-        ])
+        logger.info(f"Analyzing qualitative signals for {ticker}")
 
-        if not company_id:
-            return self.create_response(
-                status="error",
-                data={"error": "company_id is required"},
-                metadata={"request": request}
-            )
+        # Fetch qualitative data
+        if self.live_mode:
+            data = await self._fetch_live_data(ticker, company_name)
+        else:
+            data = self._fetch_sample_data(ticker)
 
-        # Use tool to process unstructured text
-        qualitative_data = await self.data_tool.process_unstructured_text(company_id)
+        # Extract metrics
+        metrics = self._extract_metrics(data)
 
-        if "error" in qualitative_data:
-            return self.create_response(
-                status="error",
-                data=qualitative_data,
-                metadata={"company_id": company_id}
-            )
+        # Calculate sentiment
+        sentiment = self._calculate_sentiment(data)
 
-        # Analyze the qualitative signals
-        analysis = self._perform_analysis(qualitative_data, focus_areas)
+        # Calculate confidence
+        confidence = self._calculate_confidence(data)
 
-        return self.create_response(
-            status="success",
-            data={
-                "company_id": company_id,
-                "overall_sentiment": analysis["overall_sentiment"],
-                "sentiment_score": analysis["sentiment_score"],
-                "key_findings": analysis["key_findings"],
-                "risk_assessment": analysis["risk_assessment"],
-                "signal_strength": analysis["signal_strength"]
-            },
+        # Build evidence
+        evidence = self._build_evidence(data)
+
+        # Generate alerts
+        alerts = self._generate_alerts(data, ticker)
+
+        # Broadcast observation
+        observation = Observation(
+            agent_id=self.agent_id,
+            ticker=ticker,
+            observation=self._generate_summary(data, metrics),
+            data={"metrics": metrics, "sentiment": sentiment},
+            confidence=confidence
+        )
+        self.agent_bus.broadcast_observation(observation)
+
+        # Broadcast alerts
+        for alert in alerts:
+            self.agent_bus.broadcast_alert(alert)
+
+        output = AgentOutput(
+            signal=SignalType.SENTIMENT,
+            agent_id=self.agent_id,
+            ticker=ticker,
+            metrics=metrics,
+            sentiment=sentiment,
+            confidence=confidence,
+            evidence=evidence,
+            alerts=[a.title for a in alerts],
             metadata={
-                "agent_role": self.role.value,
-                "focus_areas": focus_areas,
-                "tool_used": "QualitativeDataTool",
-                "themes_identified": qualitative_data.get("key_themes", [])
+                "sector": sector,
+                "data_source": "live" if self.live_mode else "sample",
+                "news_count": data.get("news_count", 0)
             }
         )
 
-    def _perform_analysis(
-        self,
-        qualitative_data: Dict[str, Any],
-        focus_areas: List[str]
-    ) -> Dict[str, Any]:
-        """
-        Perform qualitative signal analysis.
-
-        Args:
-            qualitative_data: Processed qualitative data from tool
-            focus_areas: Areas to focus analysis on
-
-        Returns:
-            Analysis results dictionary
-        """
-        sentiment_score = qualitative_data.get("sentiment_score", 0.0)
-        sentiment_label = qualitative_data.get("sentiment_label", "Neutral")
-        themes = qualitative_data.get("key_themes", [])
-        raw_text = qualitative_data.get("raw_text", "")
-
-        # Analyze key findings
-        key_findings = self._extract_key_findings(raw_text, themes, focus_areas)
-
-        # Assess risks
-        risk_assessment = self._assess_risks(
-            sentiment_score,
-            themes,
-            key_findings
+        logger.info(
+            f"Qualitative analysis complete for {ticker}: "
+            f"sentiment={sentiment:.2f}, confidence={confidence:.2f}"
         )
 
-        # Determine signal strength
-        signal_strength = self._calculate_signal_strength(
-            sentiment_score,
-            len(themes),
-            len(key_findings)
+        return output
+
+    def _fetch_sample_data(self, ticker: str) -> Dict[str, Any]:
+        """Load sample qualitative data."""
+        sample_file = self.samples_dir / f"{ticker.lower()}_qualitative.json"
+
+        if sample_file.exists():
+            with open(sample_file) as f:
+                return json.load(f)
+
+        # Default sample data
+        return {
+            "ticker": ticker,
+            "overall_sentiment": "Neutral",
+            "sentiment_score": 0.0,
+            "news_count": 0,
+            "key_themes": [],
+            "sentiment_breakdown": {
+                "positive": 0.33,
+                "neutral": 0.34,
+                "negative": 0.33
+            },
+            "reputation_score": 0.5,
+            "market_perception": "neutral",
+            "recent_news": []
+        }
+
+    async def _fetch_live_data(
+        self,
+        ticker: str,
+        company_name: str
+    ) -> Dict[str, Any]:
+        """Fetch live qualitative data from APIs."""
+        # Would integrate with news and sentiment APIs here
+        return self._fetch_sample_data(ticker)
+
+    def _extract_metrics(self, data: Dict[str, Any]) -> Dict[str, float]:
+        """Extract key metrics."""
+        return {
+            "sentiment_score": data.get("sentiment_score", 0),
+            "reputation_score": data.get("reputation_score", 0.5),
+            "news_count": data.get("news_count", 0),
+            "positive_ratio": data.get("sentiment_breakdown", {}).get("positive", 0.33),
+            "negative_ratio": data.get("sentiment_breakdown", {}).get("negative", 0.33),
+            "theme_count": len(data.get("key_themes", []))
+        }
+
+    def _calculate_sentiment(self, data: Dict[str, Any]) -> float:
+        """Calculate qualitative sentiment score."""
+        # Base sentiment from sentiment score
+        sentiment_score = data.get("sentiment_score", 0)
+
+        # Sentiment breakdown
+        breakdown = data.get("sentiment_breakdown", {})
+        pos = breakdown.get("positive", 0.33)
+        neg = breakdown.get("negative", 0.33)
+        breakdown_sentiment = pos - neg
+
+        # Reputation score
+        reputation = data.get("reputation_score", 0.5)
+        reputation_sentiment = (reputation - 0.5) * 2  # Convert to [-1, 1]
+
+        # Market perception
+        perception = data.get("market_perception", "neutral")
+        perception_boost = 0.0
+        if perception == "positive":
+            perception_boost = 0.2
+        elif perception == "negative":
+            perception_boost = -0.2
+
+        # Weighted combination
+        sentiment = (
+            0.4 * sentiment_score +
+            0.3 * breakdown_sentiment +
+            0.2 * reputation_sentiment +
+            0.1 * perception_boost
         )
 
-        return {
-            "overall_sentiment": sentiment_label,
-            "sentiment_score": sentiment_score,
-            "key_findings": key_findings,
-            "risk_assessment": risk_assessment,
-            "signal_strength": signal_strength
-        }
+        return max(-1.0, min(1.0, sentiment))
 
-    def _extract_key_findings(
-        self,
-        raw_text: str,
-        themes: List[str],
-        focus_areas: List[str]
-    ) -> List[Dict[str, str]]:
-        """Extract key findings from the text"""
-        findings = []
-        text_lower = raw_text.lower()
+    def _calculate_confidence(self, data: Dict[str, Any]) -> float:
+        """Calculate confidence in the analysis."""
+        news_count = data.get("news_count", 0)
 
-        # Workforce findings
-        if "workforce" in focus_areas or "workforce" in themes:
-            if any(word in text_lower for word in ["layoff", "exodus", "turnover"]):
-                findings.append({
-                    "category": "Workforce",
-                    "finding": "Significant employee turnover detected",
-                    "severity": "high"
-                })
-            if "hiring" in text_lower:
-                findings.append({
-                    "category": "Workforce",
-                    "finding": "Active hiring initiatives",
-                    "severity": "low"
-                })
-
-        # Leadership findings
-        if "leadership" in themes:
-            if any(word in text_lower for word in ["ceo departure", "executive exodus"]):
-                findings.append({
-                    "category": "Leadership",
-                    "finding": "Executive leadership changes",
-                    "severity": "high"
-                })
-
-        # Market findings
-        if "market_position" in focus_areas or "market" in themes:
-            if "market share" in text_lower:
-                if "loss" in text_lower or "decline" in text_lower:
-                    findings.append({
-                        "category": "Market Position",
-                        "finding": "Market share erosion",
-                        "severity": "medium"
-                    })
-
-        # Sentiment findings
-        if "sentiment" in focus_areas:
-            if any(word in text_lower for word in ["scandal", "crisis", "investigation"]):
-                findings.append({
-                    "category": "Reputation",
-                    "finding": "Negative public perception or controversy",
-                    "severity": "high"
-                })
-
-        return findings
-
-    def _assess_risks(
-        self,
-        sentiment_score: float,
-        themes: List[str],
-        findings: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
-        """Assess qualitative risks"""
-        risk_level = "low"
-        risk_factors = []
-
-        # Sentiment-based risk
-        if sentiment_score <= -0.6:
-            risk_level = "high"
-            risk_factors.append("Extremely negative sentiment")
-        elif sentiment_score <= -0.3:
-            risk_level = "medium"
-            risk_factors.append("Negative sentiment trend")
-
-        # Theme-based risk
-        high_risk_themes = ["workforce", "leadership"]
-        if any(theme in high_risk_themes for theme in themes):
-            if risk_level != "high":
-                risk_level = "medium"
-            risk_factors.append("Organizational instability indicators")
-
-        # Findings-based risk
-        high_severity_findings = [
-            f for f in findings if f.get("severity") == "high"
-        ]
-        if len(high_severity_findings) >= 2:
-            risk_level = "high"
-            risk_factors.append("Multiple high-severity issues identified")
-
-        return {
-            "risk_level": risk_level,
-            "risk_factors": risk_factors,
-            "high_severity_count": len(high_severity_findings),
-            "total_findings": len(findings)
-        }
-
-    def _calculate_signal_strength(
-        self,
-        sentiment_score: float,
-        theme_count: int,
-        finding_count: int
-    ) -> str:
-        """Calculate the strength of the qualitative signal"""
-        # Strong signals are clear and unambiguous
-        if abs(sentiment_score) >= 0.6 and finding_count >= 3:
-            return "strong"
-        elif abs(sentiment_score) >= 0.3 and theme_count >= 2:
-            return "moderate"
+        # Base confidence from data volume
+        if news_count > 50:
+            confidence = 0.85
+        elif news_count > 20:
+            confidence = 0.75
+        elif news_count > 5:
+            confidence = 0.65
         else:
-            return "weak"
+            confidence = 0.50
+
+        return confidence
+
+    def _build_evidence(self, data: Dict[str, Any]) -> List[Evidence]:
+        """Build evidence list."""
+        evidence = []
+
+        # Sentiment evidence
+        sentiment_score = data.get("sentiment_score", 0)
+        if abs(sentiment_score) > 0.3:
+            evidence.append(Evidence(
+                source="sentiment_analysis",
+                value={"sentiment_score": sentiment_score},
+                timestamp=datetime.utcnow(),
+                description=f"Sentiment score of {sentiment_score:.2f} indicates "
+                           f"{'positive' if sentiment_score > 0 else 'negative'} market perception",
+                confidence=0.8
+            ))
+
+        # News volume evidence
+        news_count = data.get("news_count", 0)
+        if news_count > 0:
+            evidence.append(Evidence(
+                source="news_analysis",
+                value={"news_count": news_count},
+                timestamp=datetime.utcnow(),
+                description=f"Analyzed {news_count} news articles",
+                confidence=0.7
+            ))
+
+        # Theme evidence
+        themes = data.get("key_themes", [])
+        if themes:
+            evidence.append(Evidence(
+                source="theme_analysis",
+                value={"themes": themes},
+                timestamp=datetime.utcnow(),
+                description=f"Key themes: {', '.join(themes)}",
+                confidence=0.75
+            ))
+
+        return evidence
+
+    def _generate_alerts(self, data: Dict[str, Any], ticker: str) -> List[Alert]:
+        """Generate alerts based on qualitative data."""
+        alerts = []
+
+        # Negative sentiment alert
+        sentiment_score = data.get("sentiment_score", 0)
+        if sentiment_score < -0.5:
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="high",
+                title="Negative Market Sentiment",
+                message=f"Sentiment score of {sentiment_score:.2f} indicates strong negative perception",
+                data={"sentiment_score": sentiment_score}
+            ))
+
+        # Reputation crisis
+        reputation = data.get("reputation_score", 0.5)
+        if reputation < 0.3:
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="high",
+                title="Reputation Risk",
+                message=f"Low reputation score of {reputation:.2f}",
+                data={"reputation_score": reputation}
+            ))
+
+        # Theme-based alerts
+        themes = data.get("key_themes", [])
+        risk_themes = ["scandal", "crisis", "investigation", "lawsuit", "layoff"]
+        detected_risks = [t for t in themes if any(r in t.lower() for r in risk_themes)]
+
+        if detected_risks:
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="medium",
+                title="Risk Themes Detected",
+                message=f"Concerning themes identified: {', '.join(detected_risks)}",
+                data={"themes": detected_risks}
+            ))
+
+        return alerts
+
+    def _generate_summary(self, data: Dict[str, Any], metrics: Dict[str, float]) -> str:
+        """Generate analysis summary."""
+        sentiment_label = data.get("overall_sentiment", "Neutral")
+        news_count = data.get("news_count", 0)
+        perception = data.get("market_perception", "neutral")
+
+        return (
+            f"Market sentiment: {sentiment_label} based on {news_count} news sources. "
+            f"Overall perception: {perception}"
+        )

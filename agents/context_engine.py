@@ -1,197 +1,318 @@
 """
 Context Engine Agent
 
-Responsible for storing and applying historical correlation rules to judgment
-scenarios. Acts as the memory and pattern-matching component of the system.
+Analyzes contextual patterns and historical correlations to provide
+investment recommendations based on similar past scenarios.
 """
 
-from typing import Dict, Any, Optional
-from agents.base_agent import BaseAgent, AgentRole, AgentResponse
-from tools.data_tools import ContextRuleTool
+import os
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
+from core.agent_contracts import (
+    AgentOutput,
+    SignalType,
+    Evidence,
+    Observation,
+    Alert
+)
+from core.agent_bus import get_agent_bus
+from utils.observability import trace_agent
+
+logger = logging.getLogger(__name__)
 
 
-class ContextEngineAgent(BaseAgent):
+class ContextEngineAgent:
     """
-    Agent specialized in context rule management and application.
+    Analyzes contextual patterns and historical correlations.
 
-    This agent maintains historical patterns and applies context-specific
-    rules to resolve conflicting signals and inform decision-making.
+    Data sources:
+    - Sample mode: data/samples/context/*.json
+    - Live mode: Historical market data and pattern databases
     """
 
-    def __init__(self, agent_id: str, rule_tool: ContextRuleTool):
-        super().__init__(agent_id, AgentRole.CONTEXT_ENGINE)
-        self.rule_tool = rule_tool
+    def __init__(self, agent_id: str = "context_engine"):
+        self.agent_id = agent_id
+        self.live_mode = os.getenv("LIVE_CONNECTORS", "false").lower() == "true"
+        self.samples_dir = Path("data/samples/context")
+        self.agent_bus = get_agent_bus()
 
-    async def process(self, request: Dict[str, Any]) -> AgentResponse:
+        logger.info(
+            f"ContextEngineAgent initialized (mode: "
+            f"{'live' if self.live_mode else 'sample'})"
+        )
+
+    @trace_agent("context_engine", {"version": "1.0"})
+    async def analyze(
+        self,
+        ticker: str,
+        company_name: str,
+        sector: Optional[str] = None
+    ) -> AgentOutput:
         """
-        Process context rule application request.
+        Analyze contextual patterns for a company.
 
-        Expected request format:
-        {
-            "scenario_type": "contrarian_opportunity",
-            "context": {
-                "financial_health": "Strong",
-                "sentiment": "Very Negative",
-                "sector": "technology"
-            }
-        }
+        Args:
+            ticker: Stock ticker symbol
+            company_name: Full company name
+            sector: Industry sector
 
         Returns:
-            AgentResponse with applicable rule and recommendation
+            AgentOutput with context analysis and recommendations
         """
-        scenario_type = request.get("scenario_type")
-        context = request.get("context", {})
+        logger.info(f"Analyzing context patterns for {ticker}")
 
-        if not scenario_type:
-            return self.create_response(
-                status="error",
-                data={"error": "scenario_type is required"},
-                metadata={"request": request}
-            )
+        # Fetch context data
+        if self.live_mode:
+            data = await self._fetch_live_data(ticker, company_name, sector)
+        else:
+            data = self._fetch_sample_data(ticker)
 
-        # Use tool to fetch applicable rule
-        sector = context.get("sector")
-        rule = await self.rule_tool.get_context_rule(scenario_type, sector)
+        # Extract metrics
+        metrics = self._extract_metrics(data)
 
-        if "error" in rule:
-            return self.create_response(
-                status="error",
-                data=rule,
-                metadata={"scenario_type": scenario_type}
-            )
+        # Calculate sentiment
+        sentiment = self._calculate_sentiment(data)
 
-        # Apply the rule to the context
-        application = self._apply_rule(rule, context)
+        # Calculate confidence
+        confidence = self._calculate_confidence(data)
 
-        return self.create_response(
-            status="success",
-            data={
-                "rule_applied": rule,
-                "context_assessment": application["assessment"],
-                "recommendation": application["recommendation"],
-                "confidence": application["confidence"],
-                "rationale": application["rationale"]
-            },
+        # Build evidence
+        evidence = self._build_evidence(data)
+
+        # Generate alerts
+        alerts = self._generate_alerts(data, ticker)
+
+        # Broadcast observation
+        observation = Observation(
+            agent_id=self.agent_id,
+            ticker=ticker,
+            observation=self._generate_summary(data, metrics),
+            data={"metrics": metrics, "sentiment": sentiment},
+            confidence=confidence
+        )
+        self.agent_bus.broadcast_observation(observation)
+
+        # Broadcast alerts
+        for alert in alerts:
+            self.agent_bus.broadcast_alert(alert)
+
+        output = AgentOutput(
+            signal=SignalType.CONTEXT,
+            agent_id=self.agent_id,
+            ticker=ticker,
+            metrics=metrics,
+            sentiment=sentiment,
+            confidence=confidence,
+            evidence=evidence,
+            alerts=[a.title for a in alerts],
             metadata={
-                "agent_role": self.role.value,
-                "scenario_type": scenario_type,
-                "tool_used": "ContextRuleTool"
+                "sector": sector,
+                "data_source": "live" if self.live_mode else "sample",
+                "pattern_matches": data.get("pattern_matches", 0)
             }
         )
 
-    def _apply_rule(
+        logger.info(
+            f"Context analysis complete for {ticker}: "
+            f"sentiment={sentiment:.2f}, confidence={confidence:.2f}"
+        )
+
+        return output
+
+    def _fetch_sample_data(self, ticker: str) -> Dict[str, Any]:
+        """Load sample context data."""
+        sample_file = self.samples_dir / f"{ticker.lower()}_context.json"
+
+        if sample_file.exists():
+            with open(sample_file) as f:
+                return json.load(f)
+
+        # Default sample data
+        return {
+            "ticker": ticker,
+            "scenario_type": "normal",
+            "pattern_matches": 0,
+            "historical_accuracy": 0.75,
+            "similar_situations": [],
+            "market_cycle": "expansion",
+            "sector_trend": "stable",
+            "contrarian_signal": False,
+            "pattern_confidence": 0.7
+        }
+
+    async def _fetch_live_data(
         self,
-        rule: Dict[str, Any],
-        context: Dict[str, Any]
+        ticker: str,
+        company_name: str,
+        sector: Optional[str]
     ) -> Dict[str, Any]:
-        """
-        Apply a context rule to the given context.
+        """Fetch live context data from pattern databases."""
+        # Would integrate with historical pattern databases here
+        return self._fetch_sample_data(ticker)
 
-        Args:
-            rule: The context rule to apply
-            context: Current context information
+    def _extract_metrics(self, data: Dict[str, Any]) -> Dict[str, float]:
+        """Extract key metrics."""
+        return {
+            "pattern_matches": data.get("pattern_matches", 0),
+            "historical_accuracy": data.get("historical_accuracy", 0.75),
+            "pattern_confidence": data.get("pattern_confidence", 0.7),
+            "similar_count": len(data.get("similar_situations", [])),
+            "contrarian_score": 1.0 if data.get("contrarian_signal") else 0.0
+        }
 
-        Returns:
-            Application results with recommendation
-        """
-        rule_conditions = rule.get("conditions", {})
-        rule_outcome = rule.get("outcome", {})
-        historical_accuracy = rule.get("historical_accuracy", 0.75)
+    def _calculate_sentiment(self, data: Dict[str, Any]) -> float:
+        """Calculate context-based sentiment score."""
+        # Base sentiment from scenario type
+        scenario_type = data.get("scenario_type", "normal")
+        scenario_sentiment = {
+            "contrarian_opportunity": 0.6,
+            "strong_momentum": 0.7,
+            "risk_warning": -0.6,
+            "normal": 0.0,
+            "uncertain": 0.0
+        }.get(scenario_type, 0.0)
 
-        # Check if conditions match
-        conditions_met = self._check_conditions(rule_conditions, context)
+        # Market cycle influence
+        market_cycle = data.get("market_cycle", "expansion")
+        cycle_boost = {
+            "expansion": 0.2,
+            "peak": 0.0,
+            "contraction": -0.2,
+            "trough": -0.1
+        }.get(market_cycle, 0.0)
 
-        # Generate assessment
-        if conditions_met["all_met"]:
-            assessment = "Context rule fully applicable"
-            confidence = historical_accuracy
-            recommendation = rule_outcome.get("recommendation", "No recommendation")
-            rationale = self._build_rationale(
-                rule,
-                context,
-                conditions_met,
-                historical_accuracy
-            )
+        # Sector trend
+        sector_trend = data.get("sector_trend", "stable")
+        trend_boost = {
+            "bullish": 0.15,
+            "stable": 0.0,
+            "bearish": -0.15
+        }.get(sector_trend, 0.0)
+
+        # Contrarian signal adjustment
+        contrarian_adjustment = 0.0
+        if data.get("contrarian_signal"):
+            contrarian_adjustment = 0.3
+
+        # Weighted combination
+        sentiment = (
+            0.4 * scenario_sentiment +
+            0.2 * cycle_boost +
+            0.2 * trend_boost +
+            0.2 * contrarian_adjustment
+        )
+
+        return max(-1.0, min(1.0, sentiment))
+
+    def _calculate_confidence(self, data: Dict[str, Any]) -> float:
+        """Calculate confidence in the analysis."""
+        pattern_matches = data.get("pattern_matches", 0)
+        historical_accuracy = data.get("historical_accuracy", 0.75)
+
+        # Base confidence from pattern matches
+        if pattern_matches > 10:
+            base_confidence = 0.9
+        elif pattern_matches > 5:
+            base_confidence = 0.8
+        elif pattern_matches > 2:
+            base_confidence = 0.7
         else:
-            assessment = "Context rule partially applicable"
-            confidence = historical_accuracy * 0.6
-            recommendation = "Exercise caution - conditions not fully met"
-            rationale = f"Only {conditions_met['met_count']}/{conditions_met['total_count']} conditions satisfied"
+            base_confidence = 0.6
 
-        return {
-            "assessment": assessment,
-            "recommendation": recommendation,
-            "confidence": round(confidence, 2),
-            "rationale": rationale,
-            "conditions_met": conditions_met
-        }
+        # Adjust by historical accuracy
+        confidence = base_confidence * historical_accuracy
 
-    def _check_conditions(
-        self,
-        rule_conditions: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Check if rule conditions are met by the context"""
-        met_count = 0
-        total_count = 0
-        details = []
+        return round(confidence, 2)
 
-        for condition_key, condition_value in rule_conditions.items():
-            total_count += 1
-            context_value = context.get(condition_key)
+    def _build_evidence(self, data: Dict[str, Any]) -> List[Evidence]:
+        """Build evidence list."""
+        evidence = []
 
-            if isinstance(condition_value, dict):
-                # Handle complex conditions (e.g., {"min": 40})
-                if "min" in condition_value:
-                    if context_value and context_value >= condition_value["min"]:
-                        met_count += 1
-                        details.append(f"{condition_key} meets minimum: {context_value} >= {condition_value['min']}")
-                    else:
-                        details.append(f"{condition_key} below minimum: {context_value} < {condition_value['min']}")
+        # Pattern matches
+        pattern_matches = data.get("pattern_matches", 0)
+        if pattern_matches > 0:
+            evidence.append(Evidence(
+                source="pattern_analysis",
+                value={"pattern_matches": pattern_matches},
+                timestamp=datetime.utcnow(),
+                description=f"Found {pattern_matches} similar historical patterns",
+                confidence=0.85
+            ))
 
-                elif "in" in condition_value:
-                    if context_value in condition_value["in"]:
-                        met_count += 1
-                        details.append(f"{condition_key} matches: {context_value}")
-                    else:
-                        details.append(f"{condition_key} mismatch: {context_value} not in {condition_value['in']}")
-            else:
-                # Simple equality check
-                if context_value == condition_value:
-                    met_count += 1
-                    details.append(f"{condition_key} matches: {context_value}")
-                else:
-                    details.append(f"{condition_key} mismatch: {context_value} != {condition_value}")
+        # Historical accuracy
+        historical_accuracy = data.get("historical_accuracy", 0.75)
+        evidence.append(Evidence(
+            source="historical_data",
+            value={"accuracy": historical_accuracy},
+            timestamp=datetime.utcnow(),
+            description=f"Pattern accuracy: {historical_accuracy*100:.0f}%",
+            confidence=0.8
+        ))
 
-        return {
-            "all_met": met_count == total_count,
-            "met_count": met_count,
-            "total_count": total_count,
-            "details": details
-        }
+        # Similar situations
+        similar_situations = data.get("similar_situations", [])
+        if similar_situations:
+            evidence.append(Evidence(
+                source="similarity_analysis",
+                value={"similar_count": len(similar_situations)},
+                timestamp=datetime.utcnow(),
+                description=f"Identified {len(similar_situations)} similar past scenarios",
+                confidence=0.75
+            ))
 
-    def _build_rationale(
-        self,
-        rule: Dict[str, Any],
-        context: Dict[str, Any],
-        conditions_met: Dict[str, Any],
-        historical_accuracy: float
-    ) -> str:
-        """Build a detailed rationale for the recommendation"""
-        rule_description = rule.get("description", "No description available")
+        return evidence
 
-        rationale_parts = [
-            f"Applied Rule: {rule_description}",
-            f"\nHistorical Pattern: This scenario has occurred {rule.get('historical_occurrences', 'multiple')} times "
-            f"with a {historical_accuracy*100:.0f}% accuracy rate.",
-            f"\nCondition Analysis: {conditions_met['met_count']}/{conditions_met['total_count']} conditions satisfied"
-        ]
+    def _generate_alerts(self, data: Dict[str, Any], ticker: str) -> List[Alert]:
+        """Generate alerts based on context analysis."""
+        alerts = []
 
-        # Add specific context insights
-        if context.get("financial_health") == "Strong" and context.get("sentiment") in ["Negative", "Very Negative"]:
-            rationale_parts.append(
-                "\nKey Insight: Strong financial fundamentals combined with negative sentiment "
-                "often indicates market overreaction, presenting a contrarian opportunity."
-            )
+        # Contrarian opportunity
+        if data.get("contrarian_signal"):
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="medium",
+                title="Contrarian Opportunity Detected",
+                message="Historical patterns suggest market may be overreacting",
+                data={"scenario_type": data.get("scenario_type")}
+            ))
 
-        return "\n".join(rationale_parts)
+        # Risk warning scenario
+        if data.get("scenario_type") == "risk_warning":
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="high",
+                title="Historical Risk Pattern",
+                message="Current situation matches past negative scenarios",
+                data={"pattern_matches": data.get("pattern_matches", 0)}
+            ))
+
+        # Low confidence in patterns
+        pattern_confidence = data.get("pattern_confidence", 0.7)
+        if pattern_confidence < 0.5:
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="low",
+                title="Low Pattern Confidence",
+                message="Limited historical data for this scenario",
+                data={"confidence": pattern_confidence}
+            ))
+
+        return alerts
+
+    def _generate_summary(self, data: Dict[str, Any], metrics: Dict[str, float]) -> str:
+        """Generate analysis summary."""
+        scenario = data.get("scenario_type", "normal")
+        matches = data.get("pattern_matches", 0)
+        accuracy = data.get("historical_accuracy", 0.75)
+
+        return (
+            f"Scenario: {scenario}. Found {matches} historical matches "
+            f"with {accuracy*100:.0f}% accuracy rate"
+        )

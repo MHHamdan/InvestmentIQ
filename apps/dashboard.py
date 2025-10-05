@@ -14,6 +14,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 
+from agents.financial_analyst import FinancialAnalystAgent
+from agents.qualitative_signal import QualitativeSignalAgent
+from agents.context_engine import ContextEngineAgent
 from agents.workforce_intelligence import WorkforceIntelligenceAgent
 from agents.market_intelligence import MarketIntelligenceAgent
 from agents.strategic_orchestrator import StrategicOrchestratorAgent
@@ -95,21 +98,22 @@ st.markdown("""
 @st.cache_resource
 def initialize_agents():
     """Initialize agents once and cache them."""
+    financial_agent = FinancialAnalystAgent()
+    qualitative_agent = QualitativeSignalAgent()
+    context_agent = ContextEngineAgent()
     workforce_agent = WorkforceIntelligenceAgent()
     market_agent = MarketIntelligenceAgent()
 
-    # Note: Legacy agents (financial, qualitative, context) can be added here
-    # For now, using only new agents
     orchestrator = StrategicOrchestratorAgent(
         agent_id="orchestrator",
-        financial_agent=None,  # Legacy support
-        qualitative_agent=None,
-        context_agent=None,
+        financial_agent=financial_agent,
+        qualitative_agent=qualitative_agent,
+        context_agent=context_agent,
         workforce_agent=workforce_agent,
         market_agent=market_agent
     )
 
-    return orchestrator, workforce_agent, market_agent
+    return orchestrator, financial_agent, qualitative_agent, context_agent, workforce_agent, market_agent
 
 
 def run_analysis(ticker: str, company_name: str, sector: str) -> Optional[Dict[str, Any]]:
@@ -120,7 +124,7 @@ def run_analysis(ticker: str, company_name: str, sector: str) -> Optional[Dict[s
         Analysis results or None if error
     """
     try:
-        orchestrator, _, _ = initialize_agents()
+        orchestrator, _, _, _, _, _ = initialize_agents()
 
         # Run async analysis in sync context
         loop = asyncio.new_event_loop()
@@ -423,7 +427,7 @@ def main():
         # System info
         st.markdown("**System Status**")
         st.caption(f"Mode: Sample Data")
-        st.caption(f"Agents: 2 active")
+        st.caption(f"Agents: 5 active")
         st.caption(f"Last update: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
         st.divider()

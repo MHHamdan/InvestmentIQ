@@ -82,10 +82,11 @@ class LLMFactory:
         try:
             from langchain_huggingface import HuggingFaceEndpoint
 
-            # Default to good free models for financial/business analysis
+            # Default to free models that work well with Inference API
             if not model_name:
-                # Using meta-llama/Llama-3.2-3B-Instruct (free, good for analysis)
-                model_name = "meta-llama/Llama-3.2-3B-Instruct"
+                # Using google/flan-t5-large (free, reliable, widely available)
+                # This model works consistently across all Hugging Face providers
+                model_name = "google/flan-t5-large"
 
             model = HuggingFaceEndpoint(
                 repo_id=model_name,

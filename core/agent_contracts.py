@@ -145,6 +145,7 @@ class FusedSignal(BaseModel):
     # Explainability
     explanations: List[str]
     top_evidence: List[Evidence]
+    llm_summary: Optional[str] = None  # LLM-generated evidence summary
 
     # Metadata
     fusion_method: str = "weighted_average"

@@ -11,11 +11,17 @@ from .base_agent import (
     AgentResponse,
     MessageType
 )
+from .strategic_orchestrator import StrategicOrchestratorAgent
+from .workforce_intelligence import WorkforceIntelligenceAgent
+from .market_intelligence import MarketIntelligenceAgent
 
 __all__ = [
     "BaseAgent",
     "AgentRole",
     "AgentMessage",
     "AgentResponse",
-    "MessageType"
+    "MessageType",
+    "StrategicOrchestratorAgent",
+    "WorkforceIntelligenceAgent",
+    "MarketIntelligenceAgent"
 ]

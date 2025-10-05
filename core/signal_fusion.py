@@ -5,10 +5,11 @@ Weighted ensemble fusion of agent signals with SHAP-like explanations.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from core.agent_contracts import AgentOutput, FusedSignal, Evidence, SignalType
+from utils.hf_client import get_hf_client
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +24,28 @@ class SignalFusion:
     - SHAP-like contribution explanations
     """
 
-    def __init__(self, method: str = "weighted_average"):
+    def __init__(self, method: str = "weighted_average", use_llm_summary: bool = True):
         """
         Initialize signal fusion.
 
         Args:
             method: Fusion method (weighted_average, confidence_weighted)
+            use_llm_summary: Whether to use LLM for evidence summarization
         """
         self.method = method
-        logger.info(f"SignalFusion initialized with method: {method}")
+        self.use_llm_summary = use_llm_summary
+
+        # Initialize HF client for evidence summarization
+        if self.use_llm_summary:
+            try:
+                self.hf_client = get_hf_client()
+                logger.info(f"SignalFusion initialized with method: {method}, LLM summarization: enabled")
+            except Exception as e:
+                logger.warning(f"Could not initialize HF client for summarization: {e}")
+                self.use_llm_summary = False
+                logger.info(f"SignalFusion initialized with method: {method}, LLM summarization: disabled")
+        else:
+            logger.info(f"SignalFusion initialized with method: {method}")
 
     def fuse(
         self,
@@ -82,6 +96,11 @@ class SignalFusion:
         # Collect top evidence
         top_evidence = self._collect_top_evidence(agent_signals)
 
+        # Generate LLM-based evidence summary if enabled
+        llm_summary = None
+        if self.use_llm_summary and top_evidence:
+            llm_summary = self._generate_llm_evidence_summary(ticker, top_evidence, final_score)
+
         fused = FusedSignal(
             ticker=ticker,
             final_score=final_score,
@@ -90,7 +109,8 @@ class SignalFusion:
             signal_weights=weights,
             explanations=explanations,
             top_evidence=top_evidence,
-            fusion_method=self.method
+            fusion_method=self.method,
+            llm_summary=llm_summary
         )
 
         logger.info(
@@ -354,3 +374,68 @@ class SignalFusion:
                     })
 
         return conflicts
+
+    def _generate_llm_evidence_summary(
+        self,
+        ticker: str,
+        evidence: List[Evidence],
+        final_score: float
+    ) -> Optional[str]:
+        """
+        Generate natural language summary of evidence using LLM.
+
+        Uses Hugging Face LLM to create a concise, coherent summary
+        of the key evidence supporting the investment decision.
+
+        Args:
+            ticker: Stock ticker
+            evidence: List of evidence items
+            final_score: Fused signal score
+
+        Returns:
+            Natural language summary or None if generation fails
+        """
+        if not self.use_llm_summary or not evidence:
+            return None
+
+        try:
+            # Prepare evidence text
+            evidence_text = "\n".join([
+                f"- {e.description} (confidence: {e.confidence:.2f}, source: {e.source})"
+                for e in evidence[:5]  # Top 5 evidence items
+            ])
+
+            # Determine recommendation direction
+            if final_score > 0.2:
+                direction = "bullish"
+            elif final_score < -0.2:
+                direction = "bearish"
+            else:
+                direction = "neutral"
+
+            # Create prompt for LLM
+            prompt = f"""Summarize the following investment evidence for {ticker} in 2-3 concise sentences.
+The overall signal is {direction} with a score of {final_score:.2f}.
+
+Evidence:
+{evidence_text}
+
+Provide a professional summary focusing on the key factors driving the {direction} outlook."""
+
+            # Generate summary using HF client
+            summary = self.hf_client.generate_text(
+                prompt=prompt,
+                max_tokens=200,
+                temperature=0.2
+            )
+
+            if summary:
+                logger.info(f"Generated LLM evidence summary for {ticker} ({len(summary)} chars)")
+                return summary
+            else:
+                logger.warning(f"Empty response from HF API for {ticker}")
+                return None
+
+        except Exception as e:
+            logger.warning(f"Failed to generate LLM evidence summary: {e}")
+            return None

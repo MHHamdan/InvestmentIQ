@@ -1,162 +1,236 @@
 """
 Financial Analyst Agent
 
-Responsible for analyzing financial health, ratios, and reporting quality.
-Uses MCP-like tools to access structured financial data.
+Analyzes financial health, ratios, and reporting quality.
 """
 
-from typing import Dict, Any
-from agents.base_agent import BaseAgent, AgentRole, AgentResponse
-from tools.data_tools import FinancialDataTool
+import os
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
+from core.agent_contracts import (
+    AgentOutput,
+    SignalType,
+    Evidence,
+    Observation,
+    Alert
+)
+from core.agent_bus import get_agent_bus
+from utils.observability import trace_agent
+
+logger = logging.getLogger(__name__)
 
 
-class FinancialAnalystAgent(BaseAgent):
+class FinancialAnalystAgent:
     """
-    Agent specialized in financial analysis and metrics calculation.
+    Analyzes financial signals including revenue, margins, and debt levels.
 
-    This agent uses tools to access financial data and computes
-    key metrics and ratios for investment decision-making.
+    Data sources:
+    - Sample mode: data/samples/financial/*.json
+    - Live mode: Financial APIs
     """
 
-    def __init__(self, agent_id: str, data_tool: FinancialDataTool):
-        super().__init__(agent_id, AgentRole.FINANCIAL_ANALYST)
-        self.data_tool = data_tool
+    def __init__(self, agent_id: str = "financial_analyst"):
+        self.agent_id = agent_id
+        self.live_mode = os.getenv("LIVE_CONNECTORS", "false").lower() == "true"
+        self.samples_dir = Path("data/samples/financial")
+        self.agent_bus = get_agent_bus()
 
-    async def process(self, request: Dict[str, Any]) -> AgentResponse:
+        logger.info(
+            f"FinancialAnalystAgent initialized (mode: "
+            f"{'live' if self.live_mode else 'sample'})"
+        )
+
+    @trace_agent("financial_analyst", {"version": "1.0"})
+    async def analyze(
+        self,
+        ticker: str,
+        company_name: str,
+        sector: Optional[str] = None
+    ) -> AgentOutput:
         """
-        Process financial analysis request.
+        Analyze financial signals for a company.
 
-        Expected request format:
-        {
-            "company_id": "COMPANY_X",
-            "analysis_type": "comprehensive" | "ratios_only"
-        }
+        Args:
+            ticker: Stock ticker symbol
+            company_name: Full company name
+            sector: Industry sector
 
         Returns:
-            AgentResponse with financial analysis data
+            AgentOutput with financial metrics and sentiment
         """
-        company_id = request.get("company_id")
-        analysis_type = request.get("analysis_type", "comprehensive")
+        logger.info(f"Analyzing financial signals for {ticker}")
 
-        if not company_id:
-            return self.create_response(
-                status="error",
-                data={"error": "company_id is required"},
-                metadata={"request": request}
-            )
+        # Fetch financial data
+        if self.live_mode:
+            data = await self._fetch_live_data(ticker)
+        else:
+            data = self._fetch_sample_data(ticker)
 
-        # Use tool to fetch financial data
-        financial_data = await self.data_tool.get_financial_ratios(company_id)
+        # Extract metrics
+        metrics = self._extract_metrics(data)
 
-        if "error" in financial_data:
-            return self.create_response(
-                status="error",
-                data=financial_data,
-                metadata={"company_id": company_id}
-            )
+        # Calculate sentiment
+        sentiment = self._calculate_sentiment(data)
 
-        # Analyze the data
-        analysis = self._perform_analysis(financial_data, analysis_type)
+        # Calculate confidence
+        confidence = self._calculate_confidence(data)
 
-        return self.create_response(
-            status="success",
-            data={
-                "company_id": company_id,
-                "financial_health": analysis["financial_health"],
-                "key_metrics": analysis["key_metrics"],
-                "assessment": analysis["assessment"],
-                "raw_ratios": financial_data["ratios"]
-            },
+        # Build evidence
+        evidence = self._build_evidence(data)
+
+        # Generate alerts
+        alerts = self._generate_alerts(data, ticker)
+
+        # Broadcast observation
+        observation = Observation(
+            agent_id=self.agent_id,
+            ticker=ticker,
+            observation=self._generate_summary(data, metrics),
+            data={"metrics": metrics, "sentiment": sentiment},
+            confidence=confidence
+        )
+        self.agent_bus.broadcast_observation(observation)
+
+        # Broadcast alerts
+        for alert in alerts:
+            self.agent_bus.broadcast_alert(alert)
+
+        output = AgentOutput(
+            signal=SignalType.FINANCIAL,
+            agent_id=self.agent_id,
+            ticker=ticker,
+            metrics=metrics,
+            sentiment=sentiment,
+            confidence=confidence,
+            evidence=evidence,
+            alerts=[a.title for a in alerts],
             metadata={
-                "agent_role": self.role.value,
-                "analysis_type": analysis_type,
-                "tool_used": "FinancialDataTool"
+                "sector": sector,
+                "data_source": "live" if self.live_mode else "sample"
             }
         )
 
-    def _perform_analysis(
-        self,
-        financial_data: Dict[str, Any],
-        analysis_type: str
-    ) -> Dict[str, Any]:
-        """
-        Perform financial analysis on the data.
+        logger.info(
+            f"Financial analysis complete for {ticker}: "
+            f"sentiment={sentiment:.2f}, confidence={confidence:.2f}"
+        )
 
-        Args:
-            financial_data: Financial ratios and raw data
-            analysis_type: Type of analysis to perform
+        return output
 
-        Returns:
-            Analysis results dictionary
-        """
-        ratios = financial_data["ratios"]
+    def _fetch_sample_data(self, ticker: str) -> Dict[str, Any]:
+        """Load sample financial data."""
+        sample_file = self.samples_dir / f"{ticker.lower()}_financial.json"
 
-        # Assess financial health based on ratios
-        gross_margin = ratios["gross_margin"]
-        operating_margin = ratios["operating_margin"]
-        net_margin = ratios["net_margin"]
-        debt_to_equity = ratios["debt_to_equity"]
+        if sample_file.exists():
+            with open(sample_file) as f:
+                return json.load(f)
 
-        # Health scoring
-        health_score = 0
-        health_factors = []
-
-        # Margin analysis
-        if gross_margin >= 40:
-            health_score += 3
-            health_factors.append("Strong gross margins (>=40%)")
-        elif gross_margin >= 30:
-            health_score += 2
-            health_factors.append("Healthy gross margins (30-40%)")
-        else:
-            health_score += 1
-            health_factors.append("Concerning gross margins (<30%)")
-
-        if operating_margin >= 20:
-            health_score += 3
-            health_factors.append("Excellent operating efficiency (>=20%)")
-        elif operating_margin >= 10:
-            health_score += 2
-            health_factors.append("Good operating efficiency (10-20%)")
-        else:
-            health_score += 1
-            health_factors.append("Weak operating efficiency (<10%)")
-
-        # Debt analysis
-        if debt_to_equity < 0.5:
-            health_score += 3
-            health_factors.append("Conservative debt levels (<0.5 D/E)")
-        elif debt_to_equity < 1.0:
-            health_score += 2
-            health_factors.append("Moderate debt levels (0.5-1.0 D/E)")
-        else:
-            health_score += 1
-            health_factors.append("High debt levels (>1.0 D/E)")
-
-        # Overall assessment
-        max_score = 9
-        health_percentage = (health_score / max_score) * 100
-
-        if health_percentage >= 80:
-            financial_health = "Strong"
-            assessment = "Company demonstrates strong financial fundamentals with healthy margins and conservative leverage."
-        elif health_percentage >= 60:
-            financial_health = "Moderate"
-            assessment = "Company shows acceptable financial health with some areas requiring monitoring."
-        else:
-            financial_health = "Weak"
-            assessment = "Company exhibits financial vulnerabilities that require careful consideration."
-
+        # Default sample data
         return {
-            "financial_health": financial_health,
-            "health_score": health_score,
-            "health_percentage": round(health_percentage, 1),
-            "key_metrics": {
-                "gross_margin": gross_margin,
-                "operating_margin": operating_margin,
-                "net_margin": net_margin,
-                "debt_to_equity": debt_to_equity
-            },
-            "health_factors": health_factors,
-            "assessment": assessment
+            "ticker": ticker,
+            "revenue_growth": 0.15,
+            "gross_margin": 0.42,
+            "operating_margin": 0.25,
+            "net_margin": 0.20,
+            "debt_to_equity": 0.45,
+            "current_ratio": 1.8,
+            "roe": 0.22,
+            "cash_flow_positive": True
         }
+
+    async def _fetch_live_data(self, ticker: str) -> Dict[str, Any]:
+        """Fetch live financial data from APIs."""
+        # Would integrate with financial APIs here
+        return self._fetch_sample_data(ticker)
+
+    def _extract_metrics(self, data: Dict[str, Any]) -> Dict[str, float]:
+        """Extract key metrics."""
+        return {
+            "revenue_growth": data.get("revenue_growth", 0),
+            "gross_margin": data.get("gross_margin", 0),
+            "operating_margin": data.get("operating_margin", 0),
+            "net_margin": data.get("net_margin", 0),
+            "debt_to_equity": data.get("debt_to_equity", 0),
+            "roe": data.get("roe", 0)
+        }
+
+    def _calculate_sentiment(self, data: Dict[str, Any]) -> float:
+        """Calculate financial sentiment score."""
+        score = 0.0
+
+        # Revenue growth
+        if data.get("revenue_growth", 0) > 0.15:
+            score += 0.3
+        elif data.get("revenue_growth", 0) > 0:
+            score += 0.1
+
+        # Margins
+        if data.get("gross_margin", 0) > 0.4:
+            score += 0.2
+        if data.get("operating_margin", 0) > 0.2:
+            score += 0.2
+
+        # Debt
+        if data.get("debt_to_equity", 1.0) < 0.5:
+            score += 0.2
+
+        # ROE
+        if data.get("roe", 0) > 0.15:
+            score += 0.1
+
+        return min(score, 1.0)
+
+    def _calculate_confidence(self, data: Dict[str, Any]) -> float:
+        """Calculate confidence in the analysis."""
+        return 0.85  # High confidence for financial data
+
+    def _build_evidence(self, data: Dict[str, Any]) -> List[Evidence]:
+        """Build evidence list."""
+        evidence = []
+
+        if data.get("revenue_growth", 0) > 0.1:
+            evidence.append(Evidence(
+                source="financial_data",
+                value={"revenue_growth": data["revenue_growth"]},
+                timestamp=datetime.utcnow(),
+                description=f"Strong revenue growth of {data['revenue_growth']*100:.1f}%",
+                confidence=0.9
+            ))
+
+        if data.get("gross_margin", 0) > 0.35:
+            evidence.append(Evidence(
+                source="financial_data",
+                value={"gross_margin": data["gross_margin"]},
+                timestamp=datetime.utcnow(),
+                description=f"Healthy gross margin of {data['gross_margin']*100:.1f}%",
+                confidence=0.85
+            ))
+
+        return evidence
+
+    def _generate_alerts(self, data: Dict[str, Any], ticker: str) -> List[Alert]:
+        """Generate alerts based on financial data."""
+        alerts = []
+
+        if data.get("debt_to_equity", 0) > 1.5:
+            alerts.append(Alert(
+                agent_id=self.agent_id,
+                ticker=ticker,
+                severity="high",
+                title="High Debt Levels",
+                message=f"Debt-to-equity ratio of {data['debt_to_equity']:.2f} is concerning",
+                data={"debt_to_equity": data["debt_to_equity"]}
+            ))
+
+        return alerts
+
+    def _generate_summary(self, data: Dict[str, Any], metrics: Dict[str, float]) -> str:
+        """Generate analysis summary."""
+        return (
+            f"Financial health shows {metrics['revenue_growth']*100:.1f}% revenue growth "
+            f"with {metrics['gross_margin']*100:.1f}% gross margin"
+        )

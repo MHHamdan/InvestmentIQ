@@ -1,17 +1,61 @@
-# InvestmentIQ MVAS - Python Dependencies
+# InvestmentIQ MVAS v3.0 - Python Dependencies
+# LangGraph + HuggingFace Edition
 
-# Core dependencies
+# Core Dependencies
 python-dateutil>=2.8.2
+python-dotenv>=1.0.0
+rich>=13.0.0
+tabulate>=0.9.0
 
-# Testing
+# LangGraph & LangChain (Required for v3.0)
+langgraph>=0.5.0
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.0.20
+langchain-huggingface>=0.0.1
+langgraph-checkpoint>=2.1.0
+
+# Observability and Evaluation
+langsmith>=0.1.0
+
+# Vector Database for RAG
+pinecone>=5.0.0
+
+# Hugging Face Integration (Required for AI features)
+huggingface-hub>=0.20.0
+sentence-transformers>=2.2.0
+
+# Text Processing
+tiktoken>=0.5.0
+
+# Machine Learning
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# HTTP Requests
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Async Support
+asyncio>=3.4.3
+
+# Scheduling
+apscheduler>=3.10.0
+
+# Dashboard (Streamlit)
+streamlit>=1.28.0
+plotly>=5.17.0
+pandas>=2.0.0
+
+# Data Validation
+pydantic>=2.7.4
+
+# Testing (Optional - Development)
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 
-# Code quality
+# Code Quality (Optional - Development)
 black>=23.7.0
 flake8>=6.0.0
 mypy>=1.4.1
-
-# Utilities
-python-dotenv>=1.0.0

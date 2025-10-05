@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,15 @@ class NewsAPITool:
         self.samples_dir = Path("data/samples/news")
         self.base_url = "https://newsapi.org/v2/"
 
+        # Hugging Face sentiment analysis
+        self.hf_api_key = os.getenv("HUGGING_FACE_API_KEY", "")
+        self.use_hf_sentiment = bool(self.hf_api_key and self.hf_api_key != "your_huggingface_key_here")
+        self.hf_sentiment_model = "ProsusAI/finbert"
+        self.hf_api_url = f"https://api-inference.huggingface.co/models/{self.hf_sentiment_model}"
+
         logger.info(
-            f"NewsAPITool initialized (mode: {'live' if self.live_mode else 'sample'})"
+            f"NewsAPITool initialized (mode: {'live' if self.live_mode else 'sample'}, "
+            f"HF sentiment: {self.use_hf_sentiment})"
         )
 
     async def get_company_news(
@@ -78,6 +86,10 @@ class NewsAPITool:
         with open(sample_file, 'r') as f:
             data = json.load(f)
 
+        # Enhance with Hugging Face sentiment if available
+        if self.use_hf_sentiment:
+            data = self._enhance_with_hf_sentiment(data)
+
         logger.info(
             f"Loaded {len(data.get('articles', []))} sample articles for {ticker}"
         )
@@ -104,6 +116,104 @@ class NewsAPITool:
             "Falling back to sample data."
         )
         return self._fetch_sample_news(ticker)
+
+    def _enhance_with_hf_sentiment(self, news_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Enhance article sentiment scores using Hugging Face FinBERT model.
+
+        FinBERT is a pre-trained NLP model specialized for financial sentiment
+        classification. It provides more accurate sentiment scores than simple
+        rule-based approaches.
+
+        Args:
+            news_data: News data with articles
+
+        Returns:
+            Enhanced news data with updated sentiment scores
+        """
+        articles = news_data.get("articles", [])
+
+        if not articles:
+            return news_data
+
+        try:
+            headers = {"Authorization": f"Bearer {self.hf_api_key}"}
+
+            for article in articles:
+                # Prepare text for sentiment analysis
+                text = f"{article.get('title', '')}. {article.get('description', '')}"
+
+                if not text.strip():
+                    continue
+
+                # Truncate to avoid API limits (512 tokens for FinBERT)
+                if len(text) > 500:
+                    text = text[:500]
+
+                try:
+                    # Call Hugging Face Inference API
+                    response = requests.post(
+                        self.hf_api_url,
+                        headers=headers,
+                        json={"inputs": text},
+                        timeout=10
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+
+                        # FinBERT returns [{"label": "positive/negative/neutral", "score": 0.xx}]
+                        if isinstance(result, list) and len(result) > 0:
+                            sentiment_scores = result[0]
+
+                            # Convert to normalized sentiment score (-1 to 1)
+                            sentiment_mapping = {
+                                "positive": 0.0,
+                                "negative": 0.0,
+                                "neutral": 0.0
+                            }
+
+                            for item in sentiment_scores:
+                                label = item.get("label", "").lower()
+                                score = item.get("score", 0.0)
+                                if label in sentiment_mapping:
+                                    sentiment_mapping[label] = score
+
+                            # Calculate weighted sentiment (-1 to 1)
+                            hf_sentiment = (
+                                sentiment_mapping["positive"] * 1.0 +
+                                sentiment_mapping["neutral"] * 0.0 +
+                                sentiment_mapping["negative"] * -1.0
+                            )
+
+                            # Update article with HF sentiment
+                            article["sentiment"] = round(hf_sentiment, 3)
+                            article["sentiment_source"] = "finbert"
+                            article["sentiment_confidence"] = max(sentiment_mapping.values())
+
+                            logger.debug(
+                                f"FinBERT sentiment for '{article.get('title', '')[:50]}': {hf_sentiment:.3f}"
+                            )
+
+                    elif response.status_code == 503:
+                        # Model is loading, use existing sentiment
+                        logger.warning("FinBERT model loading, using sample sentiment")
+                        article["sentiment_source"] = "sample"
+
+                    else:
+                        logger.warning(f"HF API error {response.status_code}, using sample sentiment")
+                        article["sentiment_source"] = "sample"
+
+                except Exception as e:
+                    logger.warning(f"Error calling HF API for article: {e}")
+                    article["sentiment_source"] = "sample"
+
+            logger.info(f"Enhanced {len(articles)} articles with FinBERT sentiment")
+
+        except Exception as e:
+            logger.error(f"Error enhancing news with HF sentiment: {e}")
+
+        return news_data
 
     def _get_empty_news(self, ticker: str) -> Dict[str, Any]:
         """Return empty news structure."""
