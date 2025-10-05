@@ -99,14 +99,14 @@ END
 ```
 investment_iq/
 ├── agents/                      # Agent implementations
-│   ├── strategic_orchestrator.py    # LangGraph orchestrator (273 lines)
+│   ├── strategic_orchestrator.py    # LangGraph orchestrator
 │   ├── financial_analyst.py
 │   ├── qualitative_signal.py
 │   ├── context_engine.py
 │   ├── workforce_intelligence.py
 │   └── market_intelligence.py
 ├── core/                        # Core components
-│   ├── investment_graph.py          # LangGraph workflow (700+ lines)
+│   ├── investment_graph.py          # LangGraph workflow 
 │   ├── signal_fusion.py             # Signal fusion with BART
 │   ├── agent_contracts.py           # Pydantic schemas
 │   ├── agent_bus.py                 # Pub/sub messaging
