@@ -10,13 +10,13 @@ InvestmentIQ is a multi-agent system for investment analysis, combining 5 specia
 
 ### Key Features
 
--**LangGraph Orchestration** - Declarative workflow with automatic state management
--**5 Specialist Agents** - Financial, Qualitative, Context, Workforce, Market Intelligence
--**HuggingFace AI** - FinBERT sentiment analysis + BART text generation
--**Signal Fusion** - Weighted ensemble with SHAP-like explanations
--**Debate Mechanism** - Automatic conflict detection and resolution
--**MCP Tools** - Edgar, NewsAPI, Finnhub integrations
--**Free Models** - $0 cost using HuggingFace free tier
+- **LangGraph Orchestration** - Declarative workflow with automatic state management
+- **5 Specialist Agents** - Financial, Qualitative, Context, Workforce, Market Intelligence
+- **HuggingFace AI** - FinBERT sentiment analysis + BART text generation
+- **Signal Fusion** - Weighted ensemble with SHAP-like explanations
+- **Debate Mechanism** - Automatic conflict detection and resolution
+- **MCP Tools** - Edgar, NewsAPI, Finnhub integrations
+- **Free Models** - $0 cost using HuggingFace free tier
 
 ## Quick Start
 
