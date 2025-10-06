@@ -3,9 +3,12 @@ Market Intelligence Agent
 
 Analyzes market signals including analyst ratings, news sentiment,
 SEC filings, and executive changes.
+
+MODIFIED: 2025-10-06 - MURTHY - Added FMP integration for analyst ratings and price targets
 """
 
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
@@ -20,6 +23,8 @@ from core.agent_bus import get_agent_bus
 from tools.edgar_tool import EdgarTool
 from tools.news_api_tool import NewsAPITool
 from tools.finnhub_tool import FinnhubTool
+# NEW: Import FMP tool for real analyst ratings and price targets
+from tools.fmp_tool import FMPTool
 from utils.observability import trace_agent
 
 logger = logging.getLogger(__name__)
@@ -36,13 +41,19 @@ class MarketIntelligenceAgent:
     """
 
     def __init__(self, agent_id: str = "market_intelligence"):
+        # EXISTING: Original initialization
         self.agent_id = agent_id
         self.edgar_tool = EdgarTool()
         self.news_tool = NewsAPITool()
         self.finnhub_tool = FinnhubTool()
         self.agent_bus = get_agent_bus()
 
-        logger.info("MarketIntelligenceAgent initialized")
+        # NEW: Initialize FMP tool for real analyst data
+        self.fmp_tool = FMPTool()
+        self.use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
+
+        mode = "FMP" if self.use_fmp else "sample"
+        logger.info(f"MarketIntelligenceAgent initialized (mode: {mode})")
 
     @trace_agent("market_intelligence", {"version": "1.0"})
     async def analyze(
@@ -64,10 +75,16 @@ class MarketIntelligenceAgent:
         """
         logger.info(f"Analyzing market intelligence for {ticker}")
 
-        # Fetch data from all sources
+        # MODIFIED: Fetch data from all sources with FMP support
         filings_data = await self.edgar_tool.get_recent_filings(ticker)
         news_data = await self.news_tool.get_company_news(ticker, company_name)
-        ratings_data = await self.finnhub_tool.get_analyst_ratings(ticker)
+
+        # NEW: Use FMP for analyst ratings if enabled, otherwise use Finnhub
+        if self.use_fmp:
+            ratings_data = await self._fetch_fmp_ratings(ticker)
+        else:
+            ratings_data = await self.finnhub_tool.get_analyst_ratings(ticker)
+
         exec_data = await self.finnhub_tool.get_executive_changes(ticker)
 
         # Analyze each data source
@@ -122,6 +139,13 @@ class MarketIntelligenceAgent:
         for alert in alerts:
             self.agent_bus.broadcast_alert(alert)
 
+        # MODIFIED: Update metadata to track data source
+        sources = ["edgar", "news_api"]
+        if self.use_fmp:
+            sources.append("fmp")
+        else:
+            sources.append("finnhub")
+
         output = AgentOutput(
             signal=SignalType.MARKET_INTELLIGENCE,
             agent_id=self.agent_id,
@@ -133,7 +157,8 @@ class MarketIntelligenceAgent:
             alerts=[a.title for a in alerts],
             metadata={
                 "sector": sector,
-                "sources": ["edgar", "news_api", "finnhub"]
+                "sources": sources,
+                "data_source": "fmp" if self.use_fmp else "sample"
             }
         )
 
@@ -143,6 +168,75 @@ class MarketIntelligenceAgent:
         )
 
         return output
+
+    async def _fetch_fmp_ratings(self, ticker: str) -> Dict[str, Any]:
+        """
+        NEW: Fetch analyst ratings and price targets from FMP.
+
+        Returns data in Finnhub-compatible format for existing analysis methods.
+        """
+        try:
+            logger.info(f"Fetching FMP analyst data for {ticker}")
+
+            # Fetch both analyst ratings and price target consensus
+            ratings = await self.fmp_tool.get_analyst_ratings(ticker)
+            price_targets = await self.fmp_tool.get_price_target_consensus(ticker)
+
+            # Convert FMP format to Finnhub-compatible format
+            # FMP returns: ratings (list), upgrades, downgrades, momentum
+            # Price targets: avg_target, high_target, low_target, median_target
+
+            fmp_ratings = ratings.get("ratings", [])
+
+            # Calculate consensus from FMP ratings
+            if fmp_ratings:
+                # Count rating types
+                buy_count = sum(1 for r in fmp_ratings if "buy" in r.get("newGrade", "").lower())
+                sell_count = sum(1 for r in fmp_ratings if "sell" in r.get("newGrade", "").lower())
+                hold_count = len(fmp_ratings) - buy_count - sell_count
+                total_analysts = len(fmp_ratings)
+
+                consensus = {
+                    "buy": buy_count,
+                    "hold": hold_count,
+                    "sell": sell_count,
+                    "buy_count": buy_count,
+                    "hold_count": hold_count,
+                    "sell_count": sell_count,
+                    "total_analysts": total_analysts,
+                    "strongBuy": sum(1 for r in fmp_ratings if "strong buy" in r.get("newGrade", "").lower()),
+                    "strongSell": sum(1 for r in fmp_ratings if "strong sell" in r.get("newGrade", "").lower()),
+                    "avg_target": price_targets.get("avg_target", 0.0),
+                    "high_target": price_targets.get("high_target", 0.0),
+                    "low_target": price_targets.get("low_target", 0.0)
+                }
+            else:
+                # No ratings available
+                consensus = {
+                    "buy": 0, "hold": 0, "sell": 0,
+                    "buy_count": 0, "hold_count": 0, "sell_count": 0,
+                    "total_analysts": 0,
+                    "strongBuy": 0, "strongSell": 0,
+                    "avg_target": price_targets.get("avg_target", 0.0),
+                    "high_target": price_targets.get("high_target", 0.0),
+                    "low_target": price_targets.get("low_target", 0.0)
+                }
+
+            result = {
+                "ratings": fmp_ratings,
+                "consensus": consensus,
+                "upgrades": ratings.get("upgrades", 0),
+                "downgrades": ratings.get("downgrades", 0),
+                "momentum": ratings.get("momentum", 0.0)
+            }
+
+            logger.info(f"✅ FMP analyst data retrieved for {ticker}")
+            return result
+
+        except Exception as e:
+            logger.warning(f"⚠️ FMP analyst fetch failed for {ticker}: {e}, using fallback")
+            # Fallback to Finnhub
+            return await self.finnhub_tool.get_analyst_ratings(ticker)
 
     def _analyze_filings(self, filings_data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze SEC filings."""
