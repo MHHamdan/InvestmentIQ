@@ -2,10 +2,13 @@
 InvestmentIQ Dashboard
 
 Streamlit web interface for multi-agent investment analysis.
+
+MODIFIED: 2025-10-06 - MURTHY - Added FMP company profile auto-population
 """
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any, Optional
 
@@ -21,6 +24,8 @@ from agents.workforce_intelligence import WorkforceIntelligenceAgent
 from agents.market_intelligence import MarketIntelligenceAgent
 from agents.strategic_orchestrator import StrategicOrchestratorAgent
 from core.signal_fusion import SignalFusion
+# NEW: Import FMP tool for company profile lookup
+from tools.fmp_tool import FMPTool
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,6 +119,36 @@ def initialize_agents():
     )
 
     return orchestrator, financial_agent, qualitative_agent, context_agent, workforce_agent, market_agent
+
+
+# NEW: Function to fetch company profile from FMP
+def fetch_company_profile(ticker: str) -> Optional[Dict[str, str]]:
+    """
+    Fetch company name and sector from FMP API.
+
+    Returns:
+        Dictionary with company_name and sector, or None if failed
+    """
+    use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
+
+    if not use_fmp:
+        return None
+
+    try:
+        fmp_tool = FMPTool()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        profile = loop.run_until_complete(fmp_tool.get_company_profile(ticker))
+        loop.close()
+
+        return {
+            "company_name": profile.get("company_name", ""),
+            "sector": profile.get("sector", "Technology"),  # Default to Technology
+            "industry": profile.get("industry", "")
+        }
+    except Exception as e:
+        logger.warning(f"Could not fetch profile for {ticker}: {e}")
+        return None
 
 
 def run_analysis(ticker: str, company_name: str, sector: str) -> Optional[Dict[str, Any]]:
@@ -385,34 +420,65 @@ def main():
     with st.sidebar:
         st.header("Analysis Configuration")
 
-        # Ticker input
+        # MODIFIED: Ticker input with auto-population trigger
         ticker = st.text_input(
-            "Stock Ticker",
+            "Stock Ticker *",
             value="AAPL",
             max_chars=5,
             help="Enter a valid stock ticker symbol (e.g., AAPL, MSFT, TSLA)"
         ).upper()
 
-        # Company name
+        # NEW: Auto-populate button
+        if st.button("🔍 Lookup Company Info", use_container_width=True):
+            if ticker:
+                with st.spinner(f"Looking up {ticker}..."):
+                    profile = fetch_company_profile(ticker)
+                    if profile:
+                        st.session_state["company_name"] = profile["company_name"]
+                        st.session_state["sector"] = profile["sector"]
+                        st.session_state["industry"] = profile["industry"]
+                        st.success(f"✅ Found: {profile['company_name']}")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Could not fetch company info. Using defaults or manual entry.")
+            else:
+                st.error("Please enter a ticker first")
+
+        # MODIFIED: Company name with session state
         company_name = st.text_input(
             "Company Name",
-            value="Apple Inc.",
-            help="Full company name"
+            value=st.session_state.get("company_name", "Apple Inc."),
+            help="Full company name (auto-populated from FMP)"
         )
 
-        # Sector
+        # MODIFIED: Sector with session state
+        sector_options = [
+            "Technology",
+            "Healthcare",
+            "Financial Services",
+            "Consumer Cyclical",
+            "Consumer Defensive",
+            "Industrials",
+            "Energy",
+            "Basic Materials",
+            "Real Estate",
+            "Utilities",
+            "Communication Services",
+            "Other"
+        ]
+
+        # NEW: Try to match session state sector with options
+        default_sector = st.session_state.get("sector", "Technology")
+        try:
+            sector_index = sector_options.index(default_sector)
+        except ValueError:
+            sector_index = 0  # Default to Technology
+
         sector = st.selectbox(
             "Sector",
-            options=[
-                "Technology",
-                "Healthcare",
-                "Financial",
-                "Consumer",
-                "Industrial",
-                "Energy",
-                "Other"
-            ],
-            index=0
+            options=sector_options,
+            index=sector_index,
+            help="Company sector (auto-populated from FMP)"
         )
 
         # Analysis button
@@ -424,9 +490,11 @@ def main():
 
         st.divider()
 
-        # System info
+        # MODIFIED: System info with FMP status
         st.markdown("**System Status**")
-        st.caption(f"Mode: Sample Data")
+        use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
+        fmp_status = "🟢 FMP Enabled" if use_fmp else "🔴 Sample Data"
+        st.caption(f"Data: {fmp_status}")
         st.caption(f"Agents: 5 active")
         st.caption(f"Last update: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 

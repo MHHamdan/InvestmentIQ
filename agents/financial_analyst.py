@@ -2,6 +2,8 @@
 Financial Analyst Agent
 
 Analyzes financial health, ratios, and reporting quality.
+
+MODIFIED: 2025-10-06 - MURTHY - Added FMP integration for real financial data
 """
 
 import os
@@ -21,6 +23,9 @@ from core.agent_contracts import (
 from core.agent_bus import get_agent_bus
 from utils.observability import trace_agent
 
+# NEW: Import FMP tool for real financial data
+from tools.fmp_tool import FMPTool
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,14 +39,19 @@ class FinancialAnalystAgent:
     """
 
     def __init__(self, agent_id: str = "financial_analyst"):
+        # EXISTING: Original initialization
         self.agent_id = agent_id
         self.live_mode = os.getenv("LIVE_CONNECTORS", "false").lower() == "true"
         self.samples_dir = Path("data/samples/financial")
         self.agent_bus = get_agent_bus()
 
+        # NEW: Initialize FMP tool for real financial data
+        self.fmp_tool = FMPTool()
+        self.use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
+
         logger.info(
             f"FinancialAnalystAgent initialized (mode: "
-            f"{'live' if self.live_mode else 'sample'})"
+            f"{'FMP' if self.use_fmp else 'live' if self.live_mode else 'sample'})"
         )
 
     @trace_agent("financial_analyst", {"version": "1.0"})
@@ -64,10 +74,16 @@ class FinancialAnalystAgent:
         """
         logger.info(f"Analyzing financial signals for {ticker}")
 
-        # Fetch financial data
-        if self.live_mode:
+        # MODIFIED: Fetch financial data with FMP support
+        # Priority: FMP (if enabled) → Live → Sample
+        if self.use_fmp:
+            # NEW: Try FMP first
+            data = await self._fetch_fmp_data(ticker)
+        elif self.live_mode:
+            # EXISTING: Live mode fallback
             data = await self._fetch_live_data(ticker)
         else:
+            # EXISTING: Sample data fallback
             data = self._fetch_sample_data(ticker)
 
         # Extract metrics
@@ -110,7 +126,8 @@ class FinancialAnalystAgent:
             alerts=[a.title for a in alerts],
             metadata={
                 "sector": sector,
-                "data_source": "live" if self.live_mode else "sample"
+                # MODIFIED: Track data source including FMP
+                "data_source": "fmp" if self.use_fmp else "live" if self.live_mode else "sample"
             }
         )
 
@@ -121,6 +138,31 @@ class FinancialAnalystAgent:
 
         return output
 
+    # NEW: FMP data fetching method added 2025-01-06
+    async def _fetch_fmp_data(self, ticker: str) -> Dict[str, Any]:
+        """
+        Fetch real financial data from Financial Modeling Prep API.
+
+        Falls back to sample data if FMP fails.
+
+        Args:
+            ticker: Stock ticker symbol
+
+        Returns:
+            Dictionary with financial metrics
+        """
+        try:
+            logger.info(f"Fetching FMP data for {ticker}")
+            data = await self.fmp_tool.get_financial_ratios(ticker)
+            logger.info(f"✅ FMP data retrieved for {ticker}")
+            return data
+        except Exception as e:
+            logger.warning(f"⚠️ FMP fetch failed for {ticker}: {e}")
+            logger.info(f"Falling back to sample data for {ticker}")
+            # NEW: Automatic fallback to sample data on error
+            return self._fetch_sample_data(ticker)
+
+    # EXISTING: Original sample data method (unchanged)
     def _fetch_sample_data(self, ticker: str) -> Dict[str, Any]:
         """Load sample financial data."""
         sample_file = self.samples_dir / f"{ticker.lower()}_financial.json"
@@ -142,6 +184,7 @@ class FinancialAnalystAgent:
             "cash_flow_positive": True
         }
 
+    # EXISTING: Original live data method (unchanged, for future use)
     async def _fetch_live_data(self, ticker: str) -> Dict[str, Any]:
         """Fetch live financial data from APIs."""
         # Would integrate with financial APIs here
