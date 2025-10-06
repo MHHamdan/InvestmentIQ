@@ -164,3 +164,6 @@ site/
 # ============================================================================
 .bandit
 .safety
+# Exclude these files from commits
+COMPLETE_SYSTEM_GUIDE.md
+FMP_INTEGRATION_PLAN.md
