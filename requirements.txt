@@ -18,6 +18,9 @@ langchain-openai
 pydantic
 python-dotenv
 
+# ADK and Google AI dependencies
+google-adk
+
 # Observability and Evaluation
 langsmith>=0.1.0
 
