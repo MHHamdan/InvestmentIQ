@@ -7,6 +7,7 @@ Coordinates 5 specialist agents with debate/consensus mechanisms.
 
 from typing import Dict, Any, List, Optional
 import logging
+import time
 from agents.base_agent import BaseAgent, AgentRole, AgentResponse
 from agents.financial_analyst import FinancialAnalystAgent
 from agents.qualitative_signal import QualitativeSignalAgent
@@ -155,8 +156,9 @@ class StrategicOrchestratorAgent(BaseAgent):
                 "errors": []
             }
 
-            # Execute LangGraph workflow
-            config = {"configurable": {"thread_id": ticker}}
+            # Execute LangGraph workflow with unique thread_id to prevent state accumulation
+            thread_id = f"{ticker}_{int(time.time() * 1000)}"
+            config = {"configurable": {"thread_id": thread_id}}
             final_state = await self.graph.ainvoke(initial_state, config)
 
             # Extract results
