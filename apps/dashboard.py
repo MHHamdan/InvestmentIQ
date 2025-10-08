@@ -1,3 +1,12 @@
+import sys
+import os
+
+# Get the path to the directory containing dashboard.py
+script_dir = os.path.dirname(__file__)
+
+# Add the parent directory (InvestmentIQ) to the system path
+sys.path.insert(0, os.path.join(script_dir, '..'))
+
 """
 InvestmentIQ Dashboard
 
