@@ -593,28 +593,27 @@ def main():
         # Welcome screen
         st.info("Enter a ticker symbol and click 'Run Analysis' to begin")
 
-        st.markdown("""
-        ### How It Works
+        col1, col2 = st.columns(2)
 
-        1. **Enter Ticker**: Type a stock symbol (e.g., AAPL, MSFT, TSLA)
-        2. **Run Analysis**: Click the button to start multi-agent analysis
-        3. **Review Results**: See recommendation, agent breakdown, and supporting evidence
+        with col1:
+            st.markdown("""
+            ### How It Works
 
-        ### Available Agents
+            1. **Enter Ticker**: Type a stock symbol (e.g., AAPL, MSFT, TSLA)
+            2. **Run Analysis**: Click the button to start multi-agent analysis
+            3. **Review Results**: See recommendation, agent breakdown, and supporting evidence
+            """)
 
-        - **Workforce Intelligence**: Employee sentiment, hiring trends
-        - **Market Intelligence**: Analyst ratings, news sentiment, SEC filings
-        - More agents can be added by integrating legacy components
+        with col2:
+            st.markdown("""
+            ### Analysis Engines
 
-        ### Sample Data
-
-        Currently running in sample mode with pre-loaded data for:
-        - AAPL (Apple Inc.)
-        - MSFT (Microsoft Corporation)
-        - TSLA (Tesla Inc.)
-
-        For live data, set `LIVE_CONNECTORS=true` in `.env` and add API keys.
-        """)
+            - **Financial Analysis**: Real-time financial metrics via FMP
+            - **Market Intelligence**: Analyst ratings and price targets
+            - **Qualitative Signals**: AI-powered news sentiment analysis
+            - **Workforce Intelligence**: Employee sentiment tracking
+            - **Context Engine**: Historical pattern matching
+            """)
 
 
 if __name__ == "__main__":
