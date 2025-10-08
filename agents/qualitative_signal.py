@@ -58,7 +58,10 @@ class QualitativeSignalAgent:
 
     def __init__(self, agent_id: str = "qualitative_signal"):
         self.agent_id = agent_id
-        self.live_mode = os.getenv("EODHA_LIVE_CONNECTORS", "false").lower() == "true"
+        # Check multiple environment variables for live mode
+        eodha_live = os.getenv("EODHA_LIVE_CONNECTORS", "false").strip('"').strip("'").lower() == "true"
+        google_key = os.getenv("GOOGLE_API_KEY", "").strip('"').strip("'")
+        self.live_mode = eodha_live and google_key and google_key != "your_google_api_key_here"
         self.samples_dir = Path("data/samples/qualitative")
         self.agent_bus = get_agent_bus()
 

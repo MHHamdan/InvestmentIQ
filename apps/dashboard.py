@@ -12,7 +12,11 @@ InvestmentIQ Dashboard
 
 Streamlit web interface for multi-agent investment analysis.
 
-MODIFIED: 2025-10-06 - MURTHY - Added FMP company profile auto-population
+Version 3.0 - October 2025
+- FMP integration with real-time price data and analyst targets
+- Qualitative analysis with Google Gemini ADK
+- 5-agent multi-perspective analysis with LangGraph orchestration
+- Auto company lookup and streamlined UX
 """
 
 import asyncio
