@@ -58,7 +58,7 @@ class QualitativeSignalAgent:
 
     def __init__(self, agent_id: str = "qualitative_signal"):
         self.agent_id = agent_id
-        self.live_mode = os.getenv("LIVE_CONNECTORS", "false").lower() == "true"
+        self.live_mode = os.getenv("EODHA_LIVE_CONNECTORS", "false").lower() == "true"
         self.samples_dir = Path("data/samples/qualitative")
         self.agent_bus = get_agent_bus()
 
