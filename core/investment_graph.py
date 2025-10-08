@@ -504,14 +504,17 @@ def create_investment_graph(
 
 
 def _determine_action(fused_score: float) -> str:
-    """Determine investment action from fused score."""
-    if fused_score >= 0.4:
+    """
+    Determine investment action from fused score.
+
+    Thresholds calibrated for realistic recommendations:
+    - BUY: Strong positive signal (>= 0.3)
+    - HOLD: Neutral or slight positive/negative (-0.3 to 0.3)
+    - SELL: Strong negative signal (< -0.3)
+    """
+    if fused_score >= 0.3:
         return "BUY"
-    elif fused_score >= 0.1:
-        return "ACCUMULATE"
-    elif fused_score >= -0.1:
+    elif fused_score >= -0.3:
         return "HOLD"
-    elif fused_score >= -0.4:
-        return "REDUCE"
     else:
         return "SELL"
