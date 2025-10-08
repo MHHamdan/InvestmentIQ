@@ -178,9 +178,11 @@ class MarketIntelligenceAgent:
         try:
             logger.info(f"Fetching FMP analyst data for {ticker}")
 
-            # Fetch both analyst ratings and price target consensus
+            # MURTHY ADDED 2025-10-07 - Fetch current price quote along with ratings and targets
+            # Fetch analyst ratings, price target consensus, and current price
             ratings = await self.fmp_tool.get_analyst_ratings(ticker)
             price_targets = await self.fmp_tool.get_price_target_consensus(ticker)
+            quote = await self.fmp_tool.get_quote(ticker)
 
             # Convert FMP format to Finnhub-compatible format
             # FMP returns: ratings (list), upgrades, downgrades, momentum
@@ -208,7 +210,8 @@ class MarketIntelligenceAgent:
                     "strongSell": sum(1 for r in fmp_ratings if "strong sell" in r.get("newGrade", "").lower()),
                     "avg_target": price_targets.get("avg_target", 0.0),
                     "high_target": price_targets.get("high_target", 0.0),
-                    "low_target": price_targets.get("low_target", 0.0)
+                    "low_target": price_targets.get("low_target", 0.0),
+                    "current_price": quote.get("price", 0.0)  # MURTHY ADDED 2025-10-07
                 }
             else:
                 # No ratings available
@@ -219,7 +222,8 @@ class MarketIntelligenceAgent:
                     "strongBuy": 0, "strongSell": 0,
                     "avg_target": price_targets.get("avg_target", 0.0),
                     "high_target": price_targets.get("high_target", 0.0),
-                    "low_target": price_targets.get("low_target", 0.0)
+                    "low_target": price_targets.get("low_target", 0.0),
+                    "current_price": quote.get("price", 0.0)  # MURTHY ADDED 2025-10-07
                 }
 
             result = {
@@ -286,6 +290,9 @@ class MarketIntelligenceAgent:
             "metrics": {
                 "consensus_sentiment": analyst_sentiment["sentiment"],
                 "avg_price_target": consensus.get("avg_target", 0.0),
+                "high_target": consensus.get("high_target", 0.0),  # MURTHY ADDED 2025-10-07
+                "low_target": consensus.get("low_target", 0.0),  # MURTHY ADDED 2025-10-07
+                "current_price": consensus.get("current_price", 0.0),  # MURTHY ADDED 2025-10-07
                 "total_analysts": analyst_sentiment["total_analysts"],
                 "bullish_ratio": analyst_sentiment["bullish_ratio"],
                 "bearish_ratio": analyst_sentiment["bearish_ratio"],

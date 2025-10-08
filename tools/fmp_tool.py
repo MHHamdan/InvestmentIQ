@@ -431,6 +431,45 @@ class FMPTool:
             logger.error(f"Failed to get historical prices for {ticker}: {e}")
             raise
 
+    async def get_quote(self, ticker: str) -> Dict[str, Any]:
+        """
+        MURTHY ADDED 2025-10-07 - Get real-time stock quote with current price
+
+        Args:
+            ticker: Stock ticker symbol (e.g., "AAPL")
+
+        Returns:
+            Dictionary with current price, change, volume, etc.
+        """
+        try:
+            endpoint = "/quote"
+            params = {"symbol": ticker.upper()}
+            data = await self._make_request(endpoint, params)
+
+            if not data or len(data) == 0:
+                raise Exception(f"No quote data for {ticker}")
+
+            quote = data[0]
+            return {
+                "ticker": ticker.upper(),
+                "price": quote.get("price", 0.0),
+                "change": quote.get("change", 0.0),
+                "change_percent": quote.get("changesPercentage", 0.0),
+                "volume": quote.get("volume", 0),
+                "avg_volume": quote.get("avgVolume", 0),
+                "market_cap": quote.get("marketCap", 0),
+                "pe_ratio": quote.get("pe", 0.0),
+                "day_low": quote.get("dayLow", 0.0),
+                "day_high": quote.get("dayHigh", 0.0),
+                "year_low": quote.get("yearLow", 0.0),
+                "year_high": quote.get("yearHigh", 0.0),
+                "previous_close": quote.get("previousClose", 0.0),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get quote for {ticker}: {e}")
+            raise
+
     async def get_historical_ratios(
         self,
         ticker: str,

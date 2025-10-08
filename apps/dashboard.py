@@ -193,6 +193,14 @@ def render_recommendation_card(recommendation: Dict[str, Any]):
     confidence = recommendation.get("confidence", 0.0)
     fused_score = recommendation.get("fused_score", 0.0)
 
+    # MURTHY ADDED 2025-10-07 - Extract price data for display
+    price_data = recommendation.get("price_data", {})
+    current_price = price_data.get("current_price", 0.0)
+    avg_target = price_data.get("avg_price_target", 0.0)
+    high_target = price_data.get("high_price_target", 0.0)
+    low_target = price_data.get("low_price_target", 0.0)
+    upside = price_data.get("upside_potential", 0.0)
+
     # Determine CSS class based on action
     if action in ["BUY", "ACCUMULATE"]:
         action_class = "recommendation-buy"
@@ -215,6 +223,17 @@ def render_recommendation_card(recommendation: Dict[str, Any]):
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # MURTHY ADDED 2025-10-07 - Display price info in separate card to avoid HTML escaping
+    if current_price > 0 and avg_target > 0:
+        upside_color = "#10b981" if upside > 0 else "#ef4444"
+        st.markdown(f"""
+        <div class="metric-card" style="margin-top: -1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+            <strong>Current Price:</strong> ${current_price:.2f}<br>
+            <strong>Analyst Target:</strong> ${avg_target:.2f} (Range: ${low_target:.2f} - ${high_target:.2f})<br>
+            <strong>Upside Potential:</strong> <span style="color: {upside_color}; font-weight: bold;">{upside:+.1f}%</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def render_agent_breakdown(agent_outputs: list, signal_contributions: Dict[str, float]):
@@ -420,66 +439,13 @@ def main():
     with st.sidebar:
         st.header("Analysis Configuration")
 
-        # MODIFIED: Ticker input with auto-population trigger
+        # MURTHY MODIFIED 2025-10-07 - Simplified ticker input, auto-lookup on analysis
         ticker = st.text_input(
             "Stock Ticker *",
             value="AAPL",
             max_chars=5,
             help="Enter a valid stock ticker symbol (e.g., AAPL, MSFT, TSLA)"
         ).upper()
-
-        # NEW: Auto-populate button
-        if st.button("🔍 Lookup Company Info", use_container_width=True):
-            if ticker:
-                with st.spinner(f"Looking up {ticker}..."):
-                    profile = fetch_company_profile(ticker)
-                    if profile:
-                        st.session_state["company_name"] = profile["company_name"]
-                        st.session_state["sector"] = profile["sector"]
-                        st.session_state["industry"] = profile["industry"]
-                        st.success(f"✅ Found: {profile['company_name']}")
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ Could not fetch company info. Using defaults or manual entry.")
-            else:
-                st.error("Please enter a ticker first")
-
-        # MODIFIED: Company name with session state
-        company_name = st.text_input(
-            "Company Name",
-            value=st.session_state.get("company_name", "Apple Inc."),
-            help="Full company name (auto-populated from FMP)"
-        )
-
-        # MODIFIED: Sector with session state
-        sector_options = [
-            "Technology",
-            "Healthcare",
-            "Financial Services",
-            "Consumer Cyclical",
-            "Consumer Defensive",
-            "Industrials",
-            "Energy",
-            "Basic Materials",
-            "Real Estate",
-            "Utilities",
-            "Communication Services",
-            "Other"
-        ]
-
-        # NEW: Try to match session state sector with options
-        default_sector = st.session_state.get("sector", "Technology")
-        try:
-            sector_index = sector_options.index(default_sector)
-        except ValueError:
-            sector_index = 0  # Default to Technology
-
-        sector = st.selectbox(
-            "Sector",
-            options=sector_options,
-            index=sector_index,
-            help="Company sector (auto-populated from FMP)"
-        )
 
         # Analysis button
         analyze_button = st.button(
@@ -513,6 +479,21 @@ def main():
             st.error("Please enter a valid ticker symbol")
             return
 
+        # MURTHY ADDED 2025-10-07 - Auto-fetch company info before analysis
+        with st.spinner(f"Looking up {ticker} company info..."):
+            profile = fetch_company_profile(ticker)
+            if profile:
+                company_name = profile["company_name"]
+                sector = profile["sector"]
+                st.session_state["last_company_name"] = company_name
+                st.session_state["last_sector"] = sector
+                st.success(f"✅ {company_name} ({sector})")
+            else:
+                # Fallback to defaults if lookup fails
+                company_name = f"{ticker} Inc."
+                sector = "Technology"
+                st.warning("⚠️ Could not fetch company info. Using defaults.")
+
         # Show progress
         with st.spinner(f"Analyzing {ticker}..."):
             result = run_analysis(ticker, company_name, sector)
@@ -529,8 +510,18 @@ def main():
     if "last_result" in st.session_state:
         result = st.session_state["last_result"]
         ticker = st.session_state["last_ticker"]
+        company_name = st.session_state.get("last_company_name", ticker)
+        sector = st.session_state.get("last_sector", "Technology")
 
         recommendation = result.get("recommendation", {})
+
+        # MURTHY ADDED 2025-10-07 - Display company info in header
+        st.markdown(f"""
+        <div style="margin-bottom: 1rem;">
+            <h2 style="margin: 0; color: #1f2937;">{ticker}</h2>
+            <p style="margin: 0.25rem 0 0 0; color: #6b7280; font-size: 1.1rem;">{company_name} • {sector}</p>
+        </div>
+        """, unsafe_allow_html=True)
         agent_outputs = result.get("agent_outputs", [])
 
         # Metrics overview

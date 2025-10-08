@@ -391,6 +391,26 @@ def create_investment_graph(
         fused_signal = state.get("fused_signal")
         consensus = state.get("consensus")
 
+        # MURTHY ADDED 2025-10-07 - Extract price data from market intelligence for recommendation display
+        price_data = {}
+        market_intelligence = state.get("market_intelligence")
+        if market_intelligence and market_intelligence.get("metrics"):
+            metrics = market_intelligence["metrics"]
+            analyst_ratings = metrics.get("analyst_ratings", {})
+            price_data = {
+                "current_price": analyst_ratings.get("current_price", 0.0),  # MURTHY FIXED 2025-10-07 - current_price is inside analyst_ratings
+                "avg_price_target": analyst_ratings.get("avg_price_target", 0.0),
+                "high_price_target": analyst_ratings.get("high_target", 0.0),
+                "low_price_target": analyst_ratings.get("low_target", 0.0),
+                "upside_potential": 0.0  # Will be calculated below
+            }
+            # Calculate upside potential
+            if price_data["current_price"] > 0 and price_data["avg_price_target"] > 0:
+                price_data["upside_potential"] = (
+                    (price_data["avg_price_target"] - price_data["current_price"])
+                    / price_data["current_price"] * 100
+                )
+
         if consensus:
             # Recommendation from consensus (after debate)
             recommendation = {
@@ -410,7 +430,8 @@ def create_investment_graph(
                 ],
                 "conflicting_points": consensus.conflicting_points,
                 "debate_rounds": consensus.debate_rounds,
-                "llm_summary": fused_signal.llm_summary if fused_signal else None
+                "llm_summary": fused_signal.llm_summary if fused_signal else None,
+                "price_data": price_data  # MURTHY ADDED 2025-10-07
             }
         elif fused_signal:
             # Direct recommendation from fusion (no debate needed)
@@ -431,7 +452,8 @@ def create_investment_graph(
                     }
                     for e in fused_signal.top_evidence[:5]
                 ],
-                "llm_summary": fused_signal.llm_summary
+                "llm_summary": fused_signal.llm_summary,
+                "price_data": price_data  # MURTHY ADDED 2025-10-07
             }
         else:
             return {
@@ -505,13 +527,16 @@ def create_investment_graph(
 
 def _determine_action(fused_score: float) -> str:
     """Determine investment action from fused score."""
-    if fused_score >= 0.4:
+    # MURTHY ADDED 2025-10-07 - Adjusted thresholds to get more diverse recommendations
+    # Previous thresholds were too narrow, causing all stocks to receive ACCUMULATE
+    # New distribution: BUY (>=0.3), ACCUMULATE (>=0.15), HOLD (>=-0.15), REDUCE (>=-0.3), SELL (<-0.3)
+    if fused_score >= 0.3:
         return "BUY"
-    elif fused_score >= 0.1:
+    elif fused_score >= 0.15:
         return "ACCUMULATE"
-    elif fused_score >= -0.1:
+    elif fused_score >= -0.15:
         return "HOLD"
-    elif fused_score >= -0.4:
+    elif fused_score >= -0.3:
         return "REDUCE"
     else:
         return "SELL"
