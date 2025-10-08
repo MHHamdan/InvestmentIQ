@@ -80,21 +80,21 @@ class QualitativeSignalAgent:
 # --- NEW: Method to configure the ADK Agent ---
     def _setup_adk_agent(self) -> Agent:
         """Sets up the ADK Agent for structured qualitative analysis."""
-        # --- FIX: Make the instruction more explicit ---
         system_template = (
             "You are an expert financial analyst. Your task is to analyze the raw news articles "
             "provided in the session state key 'raw_news_content' for the company {company_name} (Ticker: {ticker}).\n"
             "Your response MUST be ONLY a single, valid JSON object that conforms to the required schema. "
             "Do not include any introductory text, explanations, or markdown formatting like ```json."
         )
-        # --- END FIX ---
 
         agent = Agent(
             name="financial_analyzer",
-            model="gemini-2.5-flash", # Using a specific model version is good practice
+            model="gemini-2.5-flash",
             instruction=system_template,
             output_schema=LLMQualitativeAnalysis,
-            output_key="llm_analysis_result"
+            output_key="llm_analysis_result",
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         return agent
 
