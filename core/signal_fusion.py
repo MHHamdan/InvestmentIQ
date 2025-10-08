@@ -127,19 +127,19 @@ class SignalFusion:
         """
         Calculate default weights based on agent types.
 
-        Default hierarchy:
-        - Financial: 0.30 (hard metrics)
-        - Market Intelligence: 0.25 (analyst consensus)
-        - Sentiment: 0.20 (news/social)
-        - Workforce: 0.15 (employee signals)
-        - Context: 0.10 (historical patterns)
+        Default hierarchy (per team meeting 2025-10-07):
+        - Financial: 0.30 (hard metrics, FMP integration)
+        - Market Intelligence: 0.25 (analyst consensus, FMP integration)
+        - Sentiment: 0.20 (news/social, ADK/Gemini integration)
+        - Workforce: 0.00 (placeholder only, no reliable data source)
+        - Context: 0.00 (future enhancement, pattern-based)
         """
         default_weights = {
             SignalType.FINANCIAL: 0.30,
             SignalType.MARKET_INTELLIGENCE: 0.25,
             SignalType.SENTIMENT: 0.20,
-            SignalType.WORKFORCE: 0.15,
-            SignalType.CONTEXT: 0.10
+            SignalType.WORKFORCE: 0.00,
+            SignalType.CONTEXT: 0.00
         }
 
         weights = {}
