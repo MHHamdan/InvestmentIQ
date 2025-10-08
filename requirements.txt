@@ -20,6 +20,7 @@ python-dotenv
 
 # ADK and Google AI dependencies
 google-adk
+google-adk[mcp]
 
 # Observability and Evaluation
 langsmith>=0.1.0
@@ -65,3 +66,10 @@ pytest-cov>=4.1.0
 black>=23.7.0
 flake8>=6.0.0
 mypy>=1.4.1
+
+# Used for making asynchronous HTTP requests
+httpx
+
+# Libraries for web scraping
+beautifulsoup4
+lxml
