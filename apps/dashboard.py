@@ -1,18 +1,13 @@
 import sys
 import os
 
-# Get the path to the directory containing dashboard.py
 script_dir = os.path.dirname(__file__)
-
-# Add the parent directory (InvestmentIQ) to the system path
 sys.path.insert(0, os.path.join(script_dir, '..'))
 
 """
 InvestmentIQ Dashboard
 
-Streamlit web interface for multi-agent investment analysis.
-
-MODIFIED: 2025-10-06 - MURTHY - Added FMP company profile auto-population
+Multi-agent investment analysis platform powered by AI.
 """
 
 import asyncio
@@ -33,7 +28,6 @@ from agents.workforce_intelligence import WorkforceIntelligenceAgent
 from agents.market_intelligence import MarketIntelligenceAgent
 from agents.strategic_orchestrator import StrategicOrchestratorAgent
 from core.signal_fusion import SignalFusion
-# NEW: Import FMP tool for company profile lookup
 from tools.fmp_tool import FMPTool
 
 logging.basicConfig(level=logging.INFO)
@@ -42,68 +36,123 @@ logger = logging.getLogger(__name__)
 
 # Page configuration
 st.set_page_config(
-    page_title="InvestmentIQ MVAS",
-    page_icon="📊",
+    page_title="InvestmentIQ",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional styling
+# Professional CSS styling
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1f2937;
+    /* Global styles */
+    .main {
+        background-color: #ffffff;
+    }
+
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* Typography */
+    .main-title {
+        font-size: 2.8rem;
+        font-weight: 600;
+        color: #111827;
+        letter-spacing: -0.02em;
         margin-bottom: 0.5rem;
     }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #6b7280;
+
+    .subtitle {
+        font-size: 1.125rem;
+        color: #6B7280;
+        font-weight: 400;
+        margin-bottom: 3rem;
+    }
+
+    /* Recommendation card */
+    .rec-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        color: white;
         margin-bottom: 2rem;
     }
-    .metric-card {
-        background: white;
+
+    .rec-buy {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .rec-sell {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .rec-hold {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .rec-action {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .rec-confidence {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Metric cards */
+    .metric-container {
+        background: #F9FAFB;
         padding: 1.5rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        border-left: 4px solid #3b82f6;
+        border-radius: 8px;
+        border: 1px solid #E5E7EB;
     }
-    .recommendation-buy {
-        color: #10b981;
-        font-weight: 700;
-        font-size: 2rem;
+
+    /* Evidence cards */
+    .evidence-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #3B82F6;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    .recommendation-sell {
-        color: #ef4444;
-        font-weight: 700;
-        font-size: 2rem;
+
+    /* Alert styling */
+    .alert-critical {
+        background: #FEE2E2;
+        border-left-color: #DC2626;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
     }
-    .recommendation-hold {
-        color: #f59e0b;
-        font-weight: 700;
-        font-size: 2rem;
+
+    .alert-warning {
+        background: #FEF3C7;
+        border-left-color: #D97706;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
     }
-    .evidence-item {
-        padding: 0.75rem;
-        margin: 0.5rem 0;
-        background: #f9fafb;
-        border-radius: 0.375rem;
-        border-left: 3px solid #3b82f6;
+
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #F9FAFB;
     }
-    .alert-high {
-        padding: 0.75rem;
-        margin: 0.5rem 0;
-        background: #fee2e2;
-        border-radius: 0.375rem;
-        border-left: 3px solid #ef4444;
+
+    /* Button styling */
+    .stButton > button {
+        width: 100%;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
     }
-    .alert-medium {
-        padding: 0.75rem;
-        margin: 0.5rem 0;
-        background: #fef3c7;
-        border-radius: 0.375rem;
-        border-left: 3px solid #f59e0b;
+
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -130,14 +179,8 @@ def initialize_agents():
     return orchestrator, financial_agent, qualitative_agent, context_agent, workforce_agent, market_agent
 
 
-# NEW: Function to fetch company profile from FMP
 def fetch_company_profile(ticker: str) -> Optional[Dict[str, str]]:
-    """
-    Fetch company name and sector from FMP API.
-
-    Returns:
-        Dictionary with company_name and sector, or None if failed
-    """
+    """Fetch company name and sector from FMP API."""
     use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
 
     if not use_fmp:
@@ -152,7 +195,7 @@ def fetch_company_profile(ticker: str) -> Optional[Dict[str, str]]:
 
         return {
             "company_name": profile.get("company_name", ""),
-            "sector": profile.get("sector", "Technology"),  # Default to Technology
+            "sector": profile.get("sector", "Technology"),
             "industry": profile.get("industry", "")
         }
     except Exception as e:
@@ -161,221 +204,51 @@ def fetch_company_profile(ticker: str) -> Optional[Dict[str, str]]:
 
 
 def run_analysis(ticker: str, company_name: str, sector: str) -> Optional[Dict[str, Any]]:
-    """
-    Run full analysis pipeline.
-
-    Returns:
-        Analysis results or None if error
-    """
+    """Run full analysis pipeline."""
     try:
-        orchestrator, _, _, _, _, _ = initialize_agents()
+        orchestrator, *_ = initialize_agents()
 
-        # Run async analysis in sync context
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-
         result = loop.run_until_complete(
-            orchestrator.process({
-                "ticker": ticker,
-                "company_name": company_name,
-                "sector": sector
-            })
+            orchestrator.orchestrate_analysis(ticker, company_name, sector)
         )
-
         loop.close()
 
-        if result.status == "success":
-            return result.data
-        else:
-            st.error(f"Analysis failed: {result.data.get('error', 'Unknown error')}")
-            return None
-
+        return result
     except Exception as e:
-        logger.error(f"Analysis error: {e}", exc_info=True)
+        logger.error(f"Analysis failed: {e}")
         st.error(f"Analysis failed: {str(e)}")
         return None
 
 
 def render_recommendation_card(recommendation: Dict[str, Any]):
-    """Render main recommendation card."""
-    action = recommendation.get("action", "HOLD")
+    """Render clean recommendation card."""
+    action = recommendation.get("action", "HOLD").upper()
     confidence = recommendation.get("confidence", 0.0)
-    fused_score = recommendation.get("fused_score", 0.0)
+    score = recommendation.get("fused_score", 0.0)
+    reasoning = recommendation.get("reasoning", "")
 
-    # Determine CSS class based on action
-    if action in ["BUY", "ACCUMULATE"]:
-        action_class = "recommendation-buy"
-        action_emoji = "📈"
-    elif action in ["SELL", "REDUCE"]:
-        action_class = "recommendation-sell"
-        action_emoji = "📉"
+    # Determine card style
+    card_class = "rec-card"
+    if action == "BUY":
+        card_class += " rec-buy"
+    elif action == "SELL":
+        card_class += " rec-sell"
     else:
-        action_class = "recommendation-hold"
-        action_emoji = "➡️"
+        card_class += " rec-hold"
 
     st.markdown(f"""
-    <div class="metric-card">
-        <h2 style="margin-top: 0;">{action_emoji} Investment Recommendation</h2>
-        <div class="{action_class}">{action}</div>
-        <div style="margin-top: 1rem;">
-            <strong>Confidence:</strong> {confidence:.1%}<br>
-            <strong>Fused Score:</strong> {fused_score:+.3f}<br>
-            <strong>Reasoning:</strong> {recommendation.get('reasoning', 'N/A')}
-        </div>
+    <div class="{card_class}">
+        <div class="rec-action">{action}</div>
+        <div class="rec-confidence">Confidence: {confidence:.1%} | Score: {score:+.3f}</div>
+        <div style="margin-top: 1rem; font-size: 0.95rem;">{reasoning}</div>
     </div>
     """, unsafe_allow_html=True)
 
 
-def render_agent_breakdown(agent_outputs: list, signal_contributions: Dict[str, float]):
-    """Render agent breakdown table."""
-    st.subheader("Agent Analysis Breakdown")
-
-    if not agent_outputs:
-        st.info("No agent outputs available. Using sample mode with limited agents.")
-        return
-
-    # Build table data
-    table_data = []
-    for output in agent_outputs:
-        agent_id = output.get("agent_id", "unknown")
-        sentiment = output.get("sentiment", 0.0)
-        confidence = output.get("confidence", 0.0)
-        contribution = signal_contributions.get(agent_id, 0.0)
-
-        # Determine status
-        if sentiment > 0.2:
-            status = "Bullish"
-            status_color = "#10b981"
-        elif sentiment < -0.2:
-            status = "Bearish"
-            status_color = "#ef4444"
-        else:
-            status = "Neutral"
-            status_color = "#f59e0b"
-
-        table_data.append({
-            "Agent": agent_id.replace("_", " ").title(),
-            "Sentiment": f"{sentiment:+.3f}",
-            "Confidence": f"{confidence:.1%}",
-            "Weight": f"{contribution:.1%}",
-            "Status": status
-        })
-
-    df = pd.DataFrame(table_data)
-
-    # Custom styling for dataframe
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True
-    )
-
-
-def render_signal_fusion_charts(signal_contributions: Dict[str, float], explanations: list):
-    """Render signal fusion visualization."""
-    st.subheader("Signal Fusion Analysis")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**Agent Contribution Weights**")
-
-        # Pie chart of weights
-        if signal_contributions:
-            labels = [k.replace("_", " ").title() for k in signal_contributions.keys()]
-            values = list(signal_contributions.values())
-
-            fig = go.Figure(data=[go.Pie(
-                labels=labels,
-                values=values,
-                hole=0.3,
-                marker=dict(colors=px.colors.qualitative.Set3)
-            )])
-
-            fig.update_layout(
-                showlegend=True,
-                height=300,
-                margin=dict(l=20, r=20, t=30, b=20)
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No contribution data available")
-
-    with col2:
-        st.markdown("**Fusion Explanations**")
-
-        if explanations:
-            for explanation in explanations[:5]:  # Show top 5
-                st.markdown(f"""
-                <div class="evidence-item">
-                    {explanation}
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("No explanations available")
-
-
-def render_evidence(evidence_list: list):
-    """Render supporting evidence."""
-    st.subheader("Supporting Evidence")
-
-    if not evidence_list:
-        st.info("No evidence available")
-        return
-
-    for i, evidence in enumerate(evidence_list[:8], 1):
-        source = evidence.get("source", "Unknown")
-        description = evidence.get("description", "No description")
-        confidence = evidence.get("confidence", 0.0)
-
-        st.markdown(f"""
-        <div class="evidence-item">
-            <strong>{i}. {source}</strong> (confidence: {confidence:.1%})<br>
-            {description}
-        </div>
-        """, unsafe_allow_html=True)
-
-
-def render_alerts(recommendation: Dict[str, Any]):
-    """Render alerts and warnings."""
-    st.subheader("Alerts & Warnings")
-
-    conflicting_points = recommendation.get("conflicting_points", [])
-    alerts = recommendation.get("alerts", [])
-
-    if not conflicting_points and not alerts:
-        st.success("No alerts. All signals aligned.")
-        return
-
-    # Render conflicts
-    if conflicting_points:
-        st.markdown("**Signal Conflicts:**")
-        for conflict in conflicting_points:
-            st.markdown(f"""
-            <div class="alert-high">
-                {conflict}
-            </div>
-            """, unsafe_allow_html=True)
-
-    # Render alerts
-    if alerts:
-        st.markdown("**Agent Alerts:**")
-        for alert in alerts:
-            st.markdown(f"""
-            <div class="alert-medium">
-                {alert}
-            </div>
-            """, unsafe_allow_html=True)
-
-
 def render_metrics_overview(ticker: str, agent_outputs: list):
-    """Render key metrics overview."""
-    st.subheader("Quick Metrics Overview")
-
-    cols = st.columns(4)
-
-    # Calculate aggregate metrics
+    """Render clean metrics overview."""
     if agent_outputs:
         avg_sentiment = sum(o.get("sentiment", 0) for o in agent_outputs) / len(agent_outputs)
         avg_confidence = sum(o.get("confidence", 0) for o in agent_outputs) / len(agent_outputs)
@@ -387,236 +260,251 @@ def render_metrics_overview(ticker: str, agent_outputs: list):
         num_agents = 0
         num_alerts = 0
 
+    cols = st.columns(4)
+
     with cols[0]:
         st.metric(
-            label="Ticker",
+            label="Company",
             value=ticker.upper()
         )
 
     with cols[1]:
-        sentiment_delta = f"{avg_sentiment:+.2f}"
         st.metric(
-            label="Avg Sentiment",
-            value=f"{avg_sentiment:.2f}",
-            delta=sentiment_delta
+            label="Sentiment",
+            value=f"{avg_sentiment:+.2f}",
+            delta=f"{avg_sentiment:.1%}"
         )
 
     with cols[2]:
         st.metric(
-            label="Avg Confidence",
+            label="Confidence",
             value=f"{avg_confidence:.1%}"
         )
 
     with cols[3]:
         st.metric(
-            label="Active Agents",
+            label="Agents",
             value=num_agents,
-            delta=f"{num_alerts} alerts" if num_alerts > 0 else None
+            delta=f"{num_alerts} alerts" if num_alerts > 0 else "No alerts"
         )
+
+
+def render_agent_breakdown(agent_outputs: list, signal_contributions: Dict[str, float]):
+    """Render agent analysis breakdown."""
+    st.subheader("Analysis Breakdown")
+
+    for output in agent_outputs:
+        agent_name = output.get("agent_id", "Unknown").replace("_", " ").title()
+        sentiment = output.get("sentiment", 0)
+        confidence = output.get("confidence", 0)
+        weight = signal_contributions.get(output.get("agent_id", ""), 0)
+
+        with st.container():
+            col1, col2, col3 = st.columns([2, 1, 1])
+
+            with col1:
+                st.markdown(f"**{agent_name}**")
+
+            with col2:
+                color = "green" if sentiment > 0 else "red" if sentiment < 0 else "gray"
+                st.markdown(f":{color}[{sentiment:+.2f}]")
+
+            with col3:
+                st.caption(f"{confidence:.0%} confidence")
+
+            if weight > 0:
+                st.progress(weight, text=f"{weight:.1%} weight")
+
+            st.divider()
+
+
+def render_evidence(evidence: list):
+    """Render supporting evidence."""
+    st.subheader("Key Evidence")
+
+    if not evidence:
+        st.info("No evidence available")
+        return
+
+    for idx, item in enumerate(evidence[:10], 1):
+        source = item.get("source", "Unknown")
+        description = item.get("description", "")
+        confidence = item.get("confidence", 0)
+
+        st.markdown(f"""
+        <div class="evidence-card">
+            <strong>{idx}. {source}</strong> (confidence: {confidence:.0%})<br/>
+            {description}
+        </div>
+        """, unsafe_allow_html=True)
+
+
+def render_alerts(recommendation: Dict[str, Any]):
+    """Render alerts."""
+    alerts = recommendation.get("alerts", [])
+
+    if not alerts:
+        st.success("No alerts")
+        return
+
+    st.subheader("Alerts")
+
+    for alert in alerts:
+        severity = alert.get("severity", "info")
+        message = alert.get("message", "")
+
+        if severity == "high":
+            st.error(message)
+        elif severity == "medium":
+            st.warning(message)
+        else:
+            st.info(message)
 
 
 def main():
     """Main dashboard application."""
 
-    # Header
-    st.markdown('<h1 class="main-header">InvestmentIQ MVAS</h1>', unsafe_allow_html=True)
-    st.markdown(
-        '<p class="sub-header">Multi-Agent Investment Analysis System</p>',
-        unsafe_allow_html=True
-    )
+    # Clean header
+    st.markdown('<h1 class="main-title">InvestmentIQ</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">AI-powered investment analysis</p>', unsafe_allow_html=True)
 
     # Sidebar
     with st.sidebar:
-        st.header("Analysis Configuration")
+        st.markdown("### Analysis")
 
-        # MODIFIED: Ticker input with auto-population trigger
         ticker = st.text_input(
-            "Stock Ticker *",
+            "Ticker Symbol",
             value="AAPL",
             max_chars=5,
-            help="Enter a valid stock ticker symbol (e.g., AAPL, MSFT, TSLA)"
+            help="Enter stock ticker (e.g., AAPL, MSFT)"
         ).upper()
 
-        # NEW: Auto-populate button
-        if st.button("🔍 Lookup Company Info", use_container_width=True):
+        if st.button("Lookup Company", width="stretch"):
             if ticker:
-                with st.spinner(f"Looking up {ticker}..."):
+                with st.spinner("Fetching..."):
                     profile = fetch_company_profile(ticker)
                     if profile:
                         st.session_state["company_name"] = profile["company_name"]
                         st.session_state["sector"] = profile["sector"]
-                        st.session_state["industry"] = profile["industry"]
-                        st.success(f"✅ Found: {profile['company_name']}")
+                        st.success(f"Found: {profile['company_name']}")
                         st.rerun()
                     else:
-                        st.warning("⚠️ Could not fetch company info. Using defaults or manual entry.")
+                        st.warning("Company info not available")
             else:
-                st.error("Please enter a ticker first")
+                st.error("Enter a ticker first")
 
-        # MODIFIED: Company name with session state
         company_name = st.text_input(
             "Company Name",
-            value=st.session_state.get("company_name", "Apple Inc."),
-            help="Full company name (auto-populated from FMP)"
+            value=st.session_state.get("company_name", "Apple Inc.")
         )
 
-        # MODIFIED: Sector with session state
         sector_options = [
-            "Technology",
-            "Healthcare",
-            "Financial Services",
-            "Consumer Cyclical",
-            "Consumer Defensive",
-            "Industrials",
-            "Energy",
-            "Basic Materials",
-            "Real Estate",
-            "Utilities",
-            "Communication Services",
-            "Other"
+            "Technology", "Healthcare", "Financial Services",
+            "Consumer Cyclical", "Consumer Defensive", "Industrials",
+            "Energy", "Basic Materials", "Real Estate",
+            "Utilities", "Communication Services", "Other"
         ]
 
-        # NEW: Try to match session state sector with options
         default_sector = st.session_state.get("sector", "Technology")
         try:
             sector_index = sector_options.index(default_sector)
         except ValueError:
-            sector_index = 0  # Default to Technology
+            sector_index = 0
 
         sector = st.selectbox(
             "Sector",
             options=sector_options,
-            index=sector_index,
-            help="Company sector (auto-populated from FMP)"
+            index=sector_index
         )
 
-        # Analysis button
         analyze_button = st.button(
             "Run Analysis",
             type="primary",
-            use_container_width=True
+            width="stretch"
         )
 
         st.divider()
 
-        # MODIFIED: System info with FMP status
-        st.markdown("**System Status**")
+        st.markdown("### Status")
         use_fmp = os.getenv("USE_FMP_DATA", "false").lower() == "true"
-        fmp_status = "🟢 FMP Enabled" if use_fmp else "🔴 Sample Data"
-        st.caption(f"Data: {fmp_status}")
-        st.caption(f"Agents: 5 active")
-        st.caption(f"Last update: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        data_source = "Live Data" if use_fmp else "Sample Data"
+        st.caption(f"Source: {data_source}")
+        st.caption(f"Updated: {datetime.now().strftime('%H:%M')}")
 
         st.divider()
 
-        # Disclaimer
-        st.markdown("**Disclaimer**")
         st.caption(
-            "InvestmentIQ is for educational purposes only. "
-            "Not financial advice. Consult a professional advisor before investing."
+            "Educational purposes only. Not financial advice."
         )
 
-    # Main content area
+    # Main content
     if analyze_button:
         if not ticker:
-            st.error("Please enter a valid ticker symbol")
+            st.error("Please enter a ticker symbol")
             return
 
-        # Show progress
         with st.spinner(f"Analyzing {ticker}..."):
             result = run_analysis(ticker, company_name, sector)
 
-        if result is None:
-            st.error("Analysis failed. Please try again.")
+        if not result:
             return
-
-        # Cache results in session state
-        st.session_state["last_result"] = result
-        st.session_state["last_ticker"] = ticker
-
-    # Display cached results if available
-    if "last_result" in st.session_state:
-        result = st.session_state["last_result"]
-        ticker = st.session_state["last_ticker"]
 
         recommendation = result.get("recommendation", {})
         agent_outputs = result.get("agent_outputs", [])
 
-        # Metrics overview
+        # Metrics
         render_metrics_overview(ticker, agent_outputs)
 
         st.divider()
 
-        # Main recommendation
+        # Recommendation
         render_recommendation_card(recommendation)
 
-        st.divider()
-
-        # Two-column layout for details
+        # Two-column layout
         col1, col2 = st.columns([1, 1])
 
         with col1:
-            # Agent breakdown
             signal_contributions = recommendation.get("signal_contributions", {})
             render_agent_breakdown(agent_outputs, signal_contributions)
 
-            st.divider()
-
-            # Evidence
+        with col2:
             evidence = recommendation.get("supporting_evidence", [])
             render_evidence(evidence)
 
-        with col2:
-            # Signal fusion
-            explanations = recommendation.get("explanations", [])
-            render_signal_fusion_charts(signal_contributions, explanations)
-
-            st.divider()
-
-            # Alerts
-            render_alerts(recommendation)
-
         st.divider()
 
-        # Workflow summary (expandable)
-        with st.expander("View Workflow Details"):
-            workflow = result.get("workflow_summary", [])
-            if workflow:
-                workflow_df = pd.DataFrame(workflow)
-                st.dataframe(workflow_df, use_container_width=True)
-            else:
-                st.info("No workflow data available")
+        # Alerts
+        render_alerts(recommendation)
 
-        # Raw data (expandable, for debugging)
-        with st.expander("View Raw Data"):
+        # Details (expandable)
+        with st.expander("Technical Details"):
             st.json(result)
 
     else:
         # Welcome screen
-        st.info("Enter a ticker symbol and click 'Run Analysis' to begin")
+        st.info("Enter a ticker symbol and run analysis to begin")
 
-        st.markdown("""
-        ### How It Works
+        col1, col2 = st.columns(2)
 
-        1. **Enter Ticker**: Type a stock symbol (e.g., AAPL, MSFT, TSLA)
-        2. **Run Analysis**: Click the button to start multi-agent analysis
-        3. **Review Results**: See recommendation, agent breakdown, and supporting evidence
+        with col1:
+            st.markdown("""
+            #### How it works
 
-        ### Available Agents
+            1. Enter a stock ticker symbol
+            2. Optionally lookup company details
+            3. Run the analysis
+            4. Review AI-powered insights
+            """)
 
-        - **Workforce Intelligence**: Employee sentiment, hiring trends
-        - **Market Intelligence**: Analyst ratings, news sentiment, SEC filings
-        - More agents can be added by integrating legacy components
+        with col2:
+            st.markdown("""
+            #### What you get
 
-        ### Sample Data
-
-        Currently running in sample mode with pre-loaded data for:
-        - AAPL (Apple Inc.)
-        - MSFT (Microsoft Corporation)
-        - TSLA (Tesla Inc.)
-
-        For live data, set `LIVE_CONNECTORS=true` in `.env` and add API keys.
-        """)
+            - Multi-agent analysis
+            - Actionable recommendations
+            - Supporting evidence
+            - Risk alerts
+            """)
 
 
 if __name__ == "__main__":
