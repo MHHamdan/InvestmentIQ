@@ -11,8 +11,6 @@ sys.path.insert(0, os.path.join(script_dir, '..'))
 InvestmentIQ Dashboard
 
 Streamlit web interface for multi-agent investment analysis.
-
-MODIFIED: 2025-10-06 - MURTHY - Added FMP company profile auto-population
 """
 
 import asyncio
