@@ -494,20 +494,22 @@ def display_results(result, orchestrator):
 
                 key_lower = key.lower()
 
-                # Integer counts (no decimals)
+                # Integer counts (no decimals, with comma separators for readability)
                 if any(term in key_lower for term in ['total_analysts', 'buy_count', 'sell_count', 'hold_count', 'strong_buy', 'strong_sell']):
-                    return f"{int(value)}"
+                    return f"{int(value):,}"
 
                 # Ratios (no $ sign, 2 decimals)
                 if any(term in key_lower for term in ['debt_to_equity', 'roe', 'roa', 'current_ratio', 'quick_ratio', 'p/e', 'p/b']):
                     return f"{value:.2f}"
 
-                # Percentage metrics - check for specific ones first
-                if any(term in key_lower for term in ['upside_potential', 'gdp_growth', 'unemployment_rate', 'fed_funds_rate']):
-                    if abs(value) <= 1.5:
-                        return f"{value:.2%}"
-                    else:
-                        return f"{value:.2f}%"
+                # Percentage metrics already in percentage form (not 0-1 scale)
+                # upside_potential is calculated as ((target - price) / price) * 100, so already a percentage
+                if 'upside_potential' in key_lower:
+                    return f"{value:.2f}%"
+
+                # Other specific percentage metrics (already in percentage form)
+                if any(term in key_lower for term in ['gdp_growth', 'unemployment_rate', 'fed_funds_rate']):
+                    return f"{value:.2f}%"
 
                 # General percentage metrics (0-1 scale)
                 if any(term in key_lower for term in ['margin', 'growth', 'ratio', 'rate', 'return', 'yield', 'change']):
