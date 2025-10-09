@@ -1,0 +1,126 @@
+{
+  "ticker": "BA",
+  "company_name": "The Boeing Company",
+  "sector": "Industrials",
+  "timestamp": "2025-10-08T21:07:12.184364",
+  "execution_time": 9.819439,
+  "fused_signal": {
+    "final_score": -0.162,
+    "confidence": 0.654,
+    "recommendation": "HOLD (Moderate confidence)",
+    "fusion_method": "weighted_average",
+    "explanations": [
+      "Final fused score: -0.162 (neutral)",
+      "financial_analyst: strong negative contribution (-0.297), sentiment=-0.850, confidence=0.950",
+      "qualitative_signal: moderate positive contribution (+0.075), sentiment=0.300, confidence=0.800",
+      "context_engine: moderate positive contribution (+0.060), sentiment=0.600, confidence=0.750",
+      "market_intelligence: weak negative contribution (+0.000), sentiment=0.000, confidence=0.500"
+    ]
+  },
+  "agent_outputs": [
+    {
+      "agent_id": "financial_analyst",
+      "signal_type": "financial",
+      "sentiment": -0.85,
+      "confidence": 0.95,
+      "metrics": {
+        "revenue_growth": 0,
+        "gross_margin": -0.02943564148050152,
+        "operating_margin": -0.16219669863796266,
+        "net_margin": -0.17765116209146398,
+        "debt_to_equity": 0,
+        "roe": 0
+      },
+      "metadata": {
+        "sector": "Industrials",
+        "data_source": "FMP",
+        "reasoning": "I assigned a negative score due to the overall weakness indicated by the financial metrics. Specifically:\n1. Revenue Growth (0.0%): A flat revenue growth contributes negatively, so I gave it a score of -0.1. While not detrimental, it doesn't inspire confidence.\n2. Gross Margin (-2.9%): A negative gross margin indicates the company is losing money on its core products/services. This received a strong negative weighting of -0.3.\n3. Operating Margin (-16.2%): The negative operating margin further reinforces the profitability concerns. I assigned this a weight of -0.3 due to the significant loss from operations.\n4. Net Margin (-17.8%): The negative net margin continues the trend, indicating an overall loss. I gave this a weighting of -0.15.\n5. Debt-to-Equity (0.00): While a zero D/E ratio is usually a good indicator, in this context it may indicate limited investments. Due to the unusual nature of having no debt, I assigned a value of 0\n6. ROE (0.0%): The ROE confirms that the company is not generating returns for equity holders. I assigned this a weight of 0 since it aligns with the negative net income.\n\nAdding these values gives a final sentiment score of -0.85. The high confidence level reflects the clear and consistent negative signals across multiple key metrics.",
+        "key_factors": [
+          "Negative Gross Margin",
+          "Negative Operating Margin",
+          "Stagnant Revenue Growth"
+        ]
+      }
+    },
+    {
+      "agent_id": "market_intelligence",
+      "signal_type": "market_intelligence",
+      "sentiment": 0.0,
+      "confidence": 0.5,
+      "metrics": {
+        "current_price": 225.32,
+        "avg_price_target": 243.14,
+        "upside_potential": 7.908751997159593,
+        "buy_count": 267.0,
+        "sell_count": 36.0,
+        "hold_count": 47.0,
+        "total_analysts": 696.0
+      },
+      "metadata": {
+        "sector": "Industrials",
+        "data_source": "FMP",
+        "reasoning": "Gemini API call failed",
+        "key_factors": [
+          "API error",
+          "No analysis available",
+          "Using neutral score"
+        ]
+      }
+    },
+    {
+      "agent_id": "qualitative_signal",
+      "signal_type": "sentiment",
+      "sentiment": 0.3,
+      "confidence": 0.8,
+      "metrics": {
+        "positive_ratio": 0.3,
+        "negative_ratio": 0.1,
+        "news_count": 10.0,
+        "sentiment_score": 0.3
+      },
+      "metadata": {
+        "sector": "Industrials",
+        "data_source": "EODHD",
+        "reasoning": "I assigned sentiment scores to each article based on its content. Article 2 (Ryanair takes delivery of Boeing jets) and Article 10 (Boeing set to gain EU approval for Spirit Aerosystems deal) are positive as they indicate increased production and regulatory approval, respectively. Article 7 (Air Lease Announces Encouraging Activity Update) also reflects positively on the aviation industry. Article 1 (Southwest Airlines valuation) introduces some concern about profitability in the airline sector, which could indirectly impact Boeing, while Article 4 questions whether Boeing is the go-to aviation stock, presenting a neutral to slightly negative viewpoint. Articles 3, 5, 6, 8, and 9 have no direct bearing on Boeing's outlook. Weighing these factors, the positive news outweighs the negative, leading to an overall sentiment score of 0.3. I have a confidence of 0.8, as the positive articles are fairly direct, although there is always market risk.",
+        "key_factors": [
+          "Increased 737 production",
+          "Spirit Aerosystems deal approval",
+          "Positive activity update from Air Lease"
+        ],
+        "news_count": 10
+      }
+    },
+    {
+      "agent_id": "context_engine",
+      "signal_type": "context",
+      "sentiment": 0.6,
+      "confidence": 0.75,
+      "metrics": {
+        "gdp_growth": 3.78,
+        "unemployment_rate": 4.3,
+        "fed_funds_rate": 4.22,
+        "sector_performance": 0.0,
+        "cycle_score": 0.6,
+        "sector_score": 0.0
+      },
+      "metadata": {
+        "sector": "Industrials",
+        "data_source": "FMP+FRED",
+        "reasoning": "A strong GDP growth rate of 3.78% contributes positively to the sentiment, indicating a healthy economy capable of supporting Boeing's business. The low unemployment rate of 4.3% further supports this positive outlook, suggesting strong consumer and business confidence. The Federal Funds Rate at 4.22% introduces a moderate negative influence as higher interest rates can increase borrowing costs for Boeing and its customers. The sector performance at 0.00% contributes a neutral outlook, as it is neither boosting nor hindering the overall sentiment. Balancing these factors, a slightly positive sentiment score is warranted.",
+        "key_factors": [
+          "Strong GDP growth of 3.78%",
+          "Low unemployment rate of 4.3%",
+          "Neutral sector performance"
+        ],
+        "market_cycle": "expansion",
+        "sector_outlook": "stable"
+      }
+    }
+  ],
+  "signal_weights": {
+    "financial_analyst": 0.35,
+    "market_intelligence": 0.3,
+    "qualitative_signal": 0.25,
+    "context_engine": 0.1
+  }
+}

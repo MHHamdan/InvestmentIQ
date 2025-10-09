@@ -1,0 +1,126 @@
+{
+  "ticker": "",
+  "company_name": "",
+  "sector": "Unknown",
+  "timestamp": "2025-10-08T21:06:08.848428",
+  "execution_time": 1.09449,
+  "fused_signal": {
+    "final_score": 0.0,
+    "confidence": 0.65,
+    "recommendation": "HOLD (Moderate confidence)",
+    "fusion_method": "weighted_average",
+    "explanations": [
+      "Final fused score: 0.000 (neutral)",
+      "financial_analyst: weak negative contribution (+0.000), sentiment=0.000, confidence=0.500",
+      "market_intelligence: weak negative contribution (+0.000), sentiment=0.000, confidence=0.500",
+      "qualitative_signal: weak negative contribution (+0.000), sentiment=0.000, confidence=0.500",
+      "context_engine: weak negative contribution (+0.000), sentiment=0.000, confidence=0.500"
+    ]
+  },
+  "agent_outputs": [
+    {
+      "agent_id": "financial_analyst",
+      "signal_type": "financial",
+      "sentiment": 0.0,
+      "confidence": 0.5,
+      "metrics": {
+        "revenue_growth": 0.15,
+        "gross_margin": 0.42,
+        "operating_margin": 0.28,
+        "net_margin": 0.22,
+        "debt_to_equity": 1.2,
+        "roe": 0.18
+      },
+      "metadata": {
+        "sector": "Unknown",
+        "data_source": "FMP",
+        "reasoning": "Gemini API call failed",
+        "key_factors": [
+          "API error",
+          "No analysis available",
+          "Using neutral score"
+        ]
+      }
+    },
+    {
+      "agent_id": "market_intelligence",
+      "signal_type": "market_intelligence",
+      "sentiment": 0.0,
+      "confidence": 0.5,
+      "metrics": {
+        "current_price": 226.0,
+        "avg_price_target": 250.0,
+        "upside_potential": 10.619469026548673,
+        "buy_count": 15.0,
+        "sell_count": 2.0,
+        "hold_count": 8.0,
+        "total_analysts": 25.0
+      },
+      "metadata": {
+        "sector": "Unknown",
+        "data_source": "FMP",
+        "reasoning": "Gemini API call failed",
+        "key_factors": [
+          "API error",
+          "No analysis available",
+          "Using neutral score"
+        ]
+      }
+    },
+    {
+      "agent_id": "qualitative_signal",
+      "signal_type": "sentiment",
+      "sentiment": 0.0,
+      "confidence": 0.5,
+      "metrics": {
+        "positive_ratio": 0.33,
+        "negative_ratio": 0.33,
+        "news_count": 10.0,
+        "sentiment_score": 0.0
+      },
+      "metadata": {
+        "sector": "Unknown",
+        "data_source": "EODHD",
+        "reasoning": "Gemini API call failed",
+        "key_factors": [
+          "API error",
+          "No analysis available",
+          "Using neutral score"
+        ],
+        "news_count": 10
+      }
+    },
+    {
+      "agent_id": "context_engine",
+      "signal_type": "context",
+      "sentiment": 0.0,
+      "confidence": 0.5,
+      "metrics": {
+        "gdp_growth": 3.78,
+        "unemployment_rate": 4.3,
+        "fed_funds_rate": 4.22,
+        "sector_performance": 0.0,
+        "cycle_score": 0.6,
+        "sector_score": 0.0
+      },
+      "metadata": {
+        "sector": "Unknown",
+        "data_source": "FMP+FRED",
+        "reasoning": "Gemini API call failed",
+        "key_factors": [
+          "API error",
+          "No analysis available",
+          "Using neutral score"
+        ],
+        "market_cycle": "expansion",
+        "sector_outlook": "stable"
+      }
+    }
+  ],
+  "signal_weights": {
+    "financial_analyst": 0.35,
+    "market_intelligence": 0.3,
+    "qualitative_signal": 0.25,
+    "context_engine": 0.1
+  }
+}

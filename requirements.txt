@@ -1,0 +1,30 @@
+# InvestmentIQ ADK Edition - Minimal Dependencies
+# ADK + A2A + Custom Fusion + LangSmith Architecture
+
+# Core Python utilities
+python-dateutil>=2.8.2
+python-dotenv>=1.0.0
+
+# Google ADK (includes Gemini)
+google-adk
+google-adk[mcp]
+
+# LangSmith for observability
+langsmith>=0.1.0
+
+# Dashboard (Streamlit)
+streamlit>=1.28.0
+plotly>=5.17.0
+pandas>=2.0.0
+
+# HTTP Requests (for API tools)
+requests>=2.31.0
+aiohttp>=3.9.0
+httpx
+
+# Data validation
+pydantic>=2.7.4
+
+# Web scraping (for news/SEC tools)
+beautifulsoup4
+lxml

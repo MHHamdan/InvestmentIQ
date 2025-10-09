@@ -1,0 +1,126 @@
+{
+  "ticker": "AAPL",
+  "company_name": "Apple Inc.",
+  "sector": "Technology",
+  "timestamp": "2025-10-08T21:03:44.905920",
+  "execution_time": 11.627312,
+  "fused_signal": {
+    "final_score": 0.23,
+    "confidence": 0.776,
+    "recommendation": "BUY (High confidence)",
+    "fusion_method": "weighted_average",
+    "explanations": [
+      "Final fused score: 0.230 (bullish)",
+      "financial_analyst: strong positive contribution (+0.175), sentiment=0.500, confidence=0.800",
+      "context_engine: moderate positive contribution (+0.060), sentiment=0.600, confidence=0.800",
+      "market_intelligence: weak negative contribution (-0.030), sentiment=-0.100, confidence=0.800",
+      "qualitative_signal: weak positive contribution (+0.025), sentiment=0.100, confidence=0.600"
+    ]
+  },
+  "agent_outputs": [
+    {
+      "agent_id": "financial_analyst",
+      "signal_type": "financial",
+      "sentiment": 0.5,
+      "confidence": 0.8,
+      "metrics": {
+        "revenue_growth": 0,
+        "gross_margin": 0.4620634981523393,
+        "operating_margin": 0.31510222870075566,
+        "net_margin": 0.23971255769943867,
+        "debt_to_equity": 0,
+        "roe": 0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP",
+        "reasoning": "I evaluated Apple's financial health based on the provided metrics. A 0.0% revenue growth is a significant concern (assigned a -0.4 weight). Apple's gross margin of 46.2% is excellent (assigned a +0.3 weight), indicating strong pricing power and efficient cost management. The operating margin of 31.5% is also very healthy (assigned a +0.3 weight), suggesting effective operational efficiency. A net margin of 24.0% further confirms high profitability (assigned a +0.3 weight). A debt-to-equity ratio of 0.00 is very strong (assigned +0.1 weight) reflecting minimal leverage. However, the reported 0.0% ROE is very concerning (assigned -0.1 weight), this needs further review to determine the accuracy of the number as a 0 ROE is illogical given the strong margins. Summing the weighted scores: -0.4 + 0.3 + 0.3 + 0.3 + 0.1 - 0.1 = 0.5. This positive score reflects the overall profitability offsetting growth and ROE issues.",
+        "key_factors": [
+          "Healthy 46.2% Gross Margin",
+          "Strong 31.5% Operating Margin",
+          "Concerning 0.0% Revenue Growth"
+        ]
+      }
+    },
+    {
+      "agent_id": "market_intelligence",
+      "signal_type": "market_intelligence",
+      "sentiment": -0.1,
+      "confidence": 0.8,
+      "metrics": {
+        "current_price": 258.06,
+        "avg_price_target": 251.76,
+        "upside_potential": -2.4412927226226504,
+        "buy_count": 1522.0,
+        "sell_count": 44.0,
+        "hold_count": 116.0,
+        "total_analysts": 2644.0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP",
+        "reasoning": "1. **Rating Analysis:** Calculate the buy/sell ratio: 1522 (Buy) / 44 (Sell) = ~34.6. This indicates a generally positive sentiment. However, the presence of 116 hold ratings tempers this enthusiasm. I weighted the buy/sell ratio positively but reduced the overall score because of the hold ratings. \n2. **Price Target Analysis:** The current price is $258.06, and the average price target is $251.76. This implies a negative upside potential of -2.4%. The negative upside potential reduces the sentiment score.\n3. **Combined Score:** Combining the slightly positive signal from the buy/sell ratio with the negative signal from the price target results in a slightly negative overall sentiment. The confidence is relatively high because the data set is comprehensive.",
+        "key_factors": [
+          "Negative upside potential (-2.4%)",
+          "High number of hold ratings relative to sell ratings.",
+          "Strong, but not overwhelming, buy consensus."
+        ]
+      }
+    },
+    {
+      "agent_id": "qualitative_signal",
+      "signal_type": "sentiment",
+      "sentiment": 0.1,
+      "confidence": 0.6,
+      "metrics": {
+        "positive_ratio": 0.33,
+        "negative_ratio": 0.11,
+        "news_count": 10.0,
+        "sentiment_score": 0.1
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "EODHD",
+        "reasoning": "Several articles mention tech stocks gaining, which is generally positive for Apple. The article about Apple and Meta nearing settlements in EU antitrust cases is a cautiously positive development. The general rise of the S&P 500 due to AI optimism indirectly helps. However, concerns about an AI bubble and market concentration introduce negative sentiment. I've weighed the positive news slightly higher, but the concerns keep the overall sentiment close to neutral. Articles 3, 7, and 9 are paywalled and therefore not factored into the score directly. Articles 2, 5, 6, and 8 are not directly relevant to Apple's sentiment and are therefore not included in this rating.",
+        "key_factors": [
+          "Tech stock gains",
+          "Antitrust settlements",
+          "AI bubble concerns"
+        ],
+        "news_count": 10
+      }
+    },
+    {
+      "agent_id": "context_engine",
+      "signal_type": "context",
+      "sentiment": 0.6,
+      "confidence": 0.8,
+      "metrics": {
+        "gdp_growth": 3.78,
+        "unemployment_rate": 4.3,
+        "fed_funds_rate": 4.22,
+        "sector_performance": 0.0,
+        "cycle_score": 0.6,
+        "sector_score": 0.0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP+FRED",
+        "reasoning": "GDP growth of 3.78% is a strong positive signal, indicating economic expansion (+0.4). The unemployment rate of 4.3% is also healthy (+0.2). The federal funds rate at 4.22% is a potential negative as it could curb investment and consumer spending (-0.1). The sector's neutral performance compared to the S&P 500 has no impact (0.0). Summing these, the overall score is 0.4 + 0.2 - 0.1 + 0.0 = 0.5. I'm adjusting upwards slightly to 0.6 considering the strong GDP.",
+        "key_factors": [
+          "Strong GDP growth of 3.78%",
+          "Low unemployment rate of 4.3%",
+          "Rising federal funds rate of 4.22%"
+        ],
+        "market_cycle": "expansion",
+        "sector_outlook": "stable"
+      }
+    }
+  ],
+  "signal_weights": {
+    "financial_analyst": 0.35,
+    "market_intelligence": 0.3,
+    "qualitative_signal": 0.25,
+    "context_engine": 0.1
+  }
+}

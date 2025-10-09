@@ -1,0 +1,126 @@
+{
+  "ticker": "MSFT",
+  "company_name": "Microsoft Corporation",
+  "sector": "Technology",
+  "timestamp": "2025-10-08T21:06:34.597137",
+  "execution_time": 13.316162,
+  "fused_signal": {
+    "final_score": 0.485,
+    "confidence": 0.827,
+    "recommendation": "BUY (High confidence)",
+    "fusion_method": "weighted_average",
+    "explanations": [
+      "Final fused score: 0.485 (bullish)",
+      "market_intelligence: strong positive contribution (+0.225), sentiment=0.750, confidence=0.850",
+      "financial_analyst: strong positive contribution (+0.175), sentiment=0.500, confidence=0.800",
+      "context_engine: moderate positive contribution (+0.060), sentiment=0.600, confidence=0.800",
+      "qualitative_signal: weak positive contribution (+0.025), sentiment=0.100, confidence=0.750"
+    ]
+  },
+  "agent_outputs": [
+    {
+      "agent_id": "financial_analyst",
+      "signal_type": "financial",
+      "sentiment": 0.5,
+      "confidence": 0.8,
+      "metrics": {
+        "revenue_growth": 0,
+        "gross_margin": 0.6882374238616519,
+        "operating_margin": 0.4562195624085985,
+        "net_margin": 0.3614601524896707,
+        "debt_to_equity": 0,
+        "roe": 0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP",
+        "reasoning": "The sentiment score is calculated based on the following factors: Revenue Growth (0.0%): This is neutral, contributing 0 to the score. Gross Margin (68.8%): This is very strong, contributing +0.2 to the score. Operating Margin (45.6%): This is also very strong, contributing +0.2 to the score. Net Margin (36.1%): This is also very strong, contributing +0.2 to the score. Debt-to-Equity (0.00): This is excellent, contributing +0.1 to the score. ROE (0.0%): ROE should not be zero, suggesting that it may need to be updated; therefore contributing -0.2 to the score, resulting in the final score of 0.5",
+        "key_factors": [
+          "High Gross Margin",
+          "High Operating Margin",
+          "Zero Debt-to-Equity"
+        ]
+      }
+    },
+    {
+      "agent_id": "market_intelligence",
+      "signal_type": "market_intelligence",
+      "sentiment": 0.75,
+      "confidence": 0.85,
+      "metrics": {
+        "current_price": 524.85,
+        "avg_price_target": 620.09,
+        "upside_potential": 18.146136991521388,
+        "buy_count": 889.0,
+        "sell_count": 41.0,
+        "hold_count": 33.0,
+        "total_analysts": 1455.0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP",
+        "reasoning": "1. **Analyze Ratings:** Calculate a 'buy-sell ratio'. Buy ratings (889) are overwhelmingly higher than sell ratings (41), suggesting positive sentiment. The ratio is 889/41 = ~21.7. This is a strong indicator.\n2. **Evaluate Price Target:** The average price target ($620.09) is significantly higher than the current price ($524.85), indicating an upside potential of 18.1%. This suggests analysts believe the stock is undervalued and will likely increase in price.\n3. **Overall Sentiment:** Combine ratings and price target information to arrive at a sentiment score. The very high buy-sell ratio and substantial upside potential push the sentiment score towards the positive end of the spectrum. A score of 0.75 reflects this strongly positive, but not perfect, consensus. I slightly reduced the score from the absolute maximum of 1.0 to account for the presence of hold and sell ratings.\n4. **Confidence Level:** My confidence is high (0.85) because the buy-sell ratio is very strong and the price target indicates significant upside.",
+        "key_factors": [
+          "Strong buy consensus (889 buy vs 41 sell)",
+          "18.1% upside potential based on average price target",
+          "Overwhelmingly positive analyst ratings distribution"
+        ]
+      }
+    },
+    {
+      "agent_id": "qualitative_signal",
+      "signal_type": "sentiment",
+      "sentiment": 0.1,
+      "confidence": 0.75,
+      "metrics": {
+        "positive_ratio": 0.2,
+        "negative_ratio": 0.1,
+        "news_count": 10.0,
+        "sentiment_score": 0.1
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "EODHD",
+        "reasoning": "The sentiment score is calculated based on a mixed assessment of the news. Articles 3 (Microsoft Tries to Catch Up in AI) and 7 (Google tells judge it wants to retain right to bundle Gemini) present competitive challenges, leading to a slightly negative leaning. Article 8 (Microsoft announces quarterly earnings release date) is neutral, while the rest are not directly related to Microsoft. The overall score is pulled slightly positive due to Microsoft's active efforts in AI (Article 3). I've weighted the more direct articles higher.",
+        "key_factors": [
+          "AI competition",
+          "Earnings anticipation",
+          "Healthcare push"
+        ],
+        "news_count": 10
+      }
+    },
+    {
+      "agent_id": "context_engine",
+      "signal_type": "context",
+      "sentiment": 0.6,
+      "confidence": 0.8,
+      "metrics": {
+        "gdp_growth": 3.78,
+        "unemployment_rate": 4.3,
+        "fed_funds_rate": 4.22,
+        "sector_performance": 0.0,
+        "cycle_score": 0.6,
+        "sector_score": 0.0
+      },
+      "metadata": {
+        "sector": "Technology",
+        "data_source": "FMP+FRED",
+        "reasoning": "I assigned a positive sentiment score because the GDP growth of 3.78% indicates economic expansion, which is generally favorable for businesses. The unemployment rate of 4.3% is also relatively low, suggesting a healthy labor market. The federal funds rate at 4.22% poses a moderate risk, as it could increase borrowing costs for the company. Given sector performance is 0.00% and we don't have data vs S&P500, it doesn't significantly impact the overall sentiment in either a positive or negative way, therefore i weight the macro-economic factors more.",
+        "key_factors": [
+          "Strong GDP growth of 3.78%",
+          "Low unemployment rate of 4.3%",
+          "Neutral sector performance"
+        ],
+        "market_cycle": "expansion",
+        "sector_outlook": "stable"
+      }
+    }
+  ],
+  "signal_weights": {
+    "financial_analyst": 0.35,
+    "market_intelligence": 0.3,
+    "qualitative_signal": 0.25,
+    "context_engine": 0.1
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "ticker": "AMZN",
+  "company_name": "Amazon.com, Inc.",
+  "sector": "Consumer Cyclical",
+  "timestamp": "2025-10-08T21:07:32.771519",
+  "execution_time": 13.969061,
+  "fused_signal": {
+    "final_score": 0.477,
+    "confidence": 0.869,
+    "recommendation": "BUY (High confidence)",
+    "fusion_method": "weighted_average",
+    "explanations": [
+      "Final fused score: 0.477 (bullish)",
+      "market_intelligence: strong positive contribution (+0.255), sentiment=0.850, confidence=0.950",
+      "financial_analyst: strong positive contribution (+0.122), sentiment=0.350, confidence=0.850",
+      "qualitative_signal: weak positive contribution (+0.050), sentiment=0.200, confidence=0.800",
+      "context_engine: weak positive contribution (+0.050), sentiment=0.500, confidence=0.800"
+    ]
+  },
+  "agent_outputs": [
+    {
+      "agent_id": "financial_analyst",
+      "signal_type": "financial",
+      "sentiment": 0.35,
+      "confidence": 0.85,
+      "metrics": {
+        "revenue_growth": 0,
+        "gross_margin": 0.48854393464156787,
+        "operating_margin": 0.1075194487420038,
+        "net_margin": 0.09287117197186653,
+        "debt_to_equity": 0,
+        "roe": 0
+      },
+      "metadata": {
+        "sector": "Consumer Cyclical",
+        "data_source": "FMP",
+        "reasoning": "I evaluated each metric based on general benchmarks and their importance to Amazon's business model. Revenue Growth: 0.0% is a negative signal, indicating stagnation. I assigned it a score of -0.3 and a weight of 0.25 because revenue is paramount for a growth company like Amazon. Gross Margin: 48.9% is a positive signal, showing strong pricing power and cost management. I assigned a score of +0.4 with a weight of 0.20. Operating Margin: 10.8% is also positive, indicating efficient operations. I assigned a score of +0.3 with a weight of 0.20. Net Margin: 9.3% is another positive sign, showing profitability after all expenses. I assigned a score of +0.2 with a weight of 0.15. Debt-to-Equity: 0.00 is extremely positive, suggesting very low financial risk. I assigned a score of +0.3 with a weight of 0.10. ROE: 0.0% is a major negative, indicating poor return on equity. I assigned a score of -0.2 with a weight of 0.10. The weighted average is (0.25*-0.3) + (0.20*0.4) + (0.20*0.3) + (0.15*0.2) + (0.10*0.3) + (0.10*-0.2) = -0.075 + 0.08 + 0.06 + 0.03 + 0.03 - 0.02 = 0.105. I scaled 0.105 to 0.35 to fit the range.",
+        "key_factors": [
+          "Healthy 48.9% gross margin",
+          "Healthy 10.8% operating margin",
+          "Weak 0.0% revenue growth"
+        ]
+      }
+    },
+    {
+      "agent_id": "market_intelligence",
+      "signal_type": "market_intelligence",
+      "sentiment": 0.85,
+      "confidence": 0.95,
+      "metrics": {
+        "current_price": 225.22,
+        "avg_price_target": 260.56,
+        "upside_potential": 15.691324038717699,
+        "buy_count": 1544.0,
+        "sell_count": 3.0,
+        "hold_count": 41.0,
+        "total_analysts": 2036.0
+      },
+      "metadata": {
+        "sector": "Consumer Cyclical",
+        "data_source": "FMP",
+        "reasoning": "1. **Rating Analysis:** Calculate the Buy/Sell ratio. 1544 Buy ratings significantly outweigh the 3 Sell ratings. This indicates a overwhelmingly positive sentiment based on analyst ratings. I assigned a high positive score (0.7) based on this strong buy consensus. 41 hold ratings are considered neutral and have a minimal impact on the score.\n2. **Price Target Analysis:** Upside Potential: The average price target of $260.56 represents a 15.7% upside from the current price of $225.22. This suggests analysts believe the stock is undervalued. I assigned a positive score of 0.15 reflecting the potential gain.\n3. **Analyst Coverage:** The large number of total analysts (2036) suggests a high level of scrutiny and broad consensus, increasing the reliability of the overall sentiment. While this doesn't directly impact the sentiment score, it increases confidence in the assessment.\n4. **Final Score:** I combined the scores from ratings (0.7) and price target (0.15) to reach an aggregate sentiment score of 0.85. The confidence is high (0.95) due to the strength of the buy consensus and the significant upside potential.",
+        "key_factors": [
+          "Strong buy consensus (1544 buy vs 3 sell)",
+          "15.7% upside potential",
+          "High analyst coverage (2036 analysts)"
+        ]
+      }
+    },
+    {
+      "agent_id": "qualitative_signal",
+      "signal_type": "sentiment",
+      "sentiment": 0.2,
+      "confidence": 0.8,
+      "metrics": {
+        "positive_ratio": 0.4,
+        "negative_ratio": 0.4,
+        "news_count": 10.0,
+        "sentiment_score": 0.2
+      },
+      "metadata": {
+        "sector": "Consumer Cyclical",
+        "data_source": "EODHD",
+        "reasoning": "I assessed the sentiment of each article. Article 2 reports Amazon outperforming the stock market (+0.3). Article 3 discusses Anthropic's expansion, implying positive growth for an Amazon-backed company (+0.2). Articles 4 and 9 mention tech stocks gaining (+0.1 each). Articles 1, 5, 6, and 7 discuss the AI bubble and market concentration (-0.1 each). Article 8 discusses Amazon's drug kiosks in a neutral way (+0.0). Article 10 discusses OpenAI but has limited impact on Amazon (-0.0). Summing these gives a net positive sentiment. The confidence is high because the sources are credible and relatively consistent.",
+        "key_factors": [
+          "Stock Market Performance",
+          "AI Investment Growth",
+          "Tech Sector Gains"
+        ],
+        "news_count": 10
+      }
+    },
+    {
+      "agent_id": "context_engine",
+      "signal_type": "context",
+      "sentiment": 0.5,
+      "confidence": 0.8,
+      "metrics": {
+        "gdp_growth": 3.78,
+        "unemployment_rate": 4.3,
+        "fed_funds_rate": 4.22,
+        "sector_performance": 0.0,
+        "cycle_score": 0.6,
+        "sector_score": 0.0
+      },
+      "metadata": {
+        "sector": "Consumer Cyclical",
+        "data_source": "FMP+FRED",
+        "reasoning": "GDP growth of 3.78% is a strong positive indicator, suggesting economic expansion and increased consumer spending (0.3). An unemployment rate of 4.3% is also positive, indicating a healthy labor market and consumer confidence (0.2). However, a Federal Funds Rate of 4.22% is a potential concern, as it could dampen consumer spending and investment. This acts as a slight negative (-0.1). The sector performance at 0.00% vs S&P 500 is neutral (0). Summing these factors gives us a net positive sentiment.",
+        "key_factors": [
+          "Strong GDP growth of 3.78%",
+          "Low unemployment rate of 4.3%",
+          "Rising federal funds rate of 4.22%"
+        ],
+        "market_cycle": "expansion",
+        "sector_outlook": "stable"
+      }
+    }
+  ],
+  "signal_weights": {
+    "financial_analyst": 0.35,
+    "market_intelligence": 0.3,
+    "qualitative_signal": 0.25,
+    "context_engine": 0.1
+  }
+}
