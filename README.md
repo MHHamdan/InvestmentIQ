@@ -96,8 +96,12 @@ InvestmentIQ/
 │   ├── test_results_*.json          # Cached analysis results
 │   └── test_summary.md              # Test results summary
 │
-├── reference/                       # Legacy LangGraph implementation
-│   └── agents/                      # Original agent implementations
+├── core/                            # Core contracts & fusion
+│   ├── agent_contracts.py           # Pydantic models for agent outputs
+│   └── signal_fusion.py             # Custom weighted averaging fusion
+│
+├── tools/                           # API integration tools
+│   └── fmp_tool.py                  # Financial Modeling Prep API client
 │
 ├── .env.example                     # Environment template with API instructions
 ├── .env                            # Your API keys (not in git)
@@ -464,10 +468,12 @@ This project evolved from a LangGraph-based architecture to Google ADK:
 2. ✅ Direct Gemini API with structured outputs (more reliable)
 3. ✅ Simpler codebase (~200 lines per agent vs. ~500)
 4. ✅ Better transparency with Pydantic schemas
+5. ✅ **v2.0 Enhancement**: Added LangSmith observability for complete tracing
 
-**v2.0 Enhancement**: Added LangSmith observability for complete tracing
-
-**Legacy code**: Available in `/reference/` folder
+**Architecture Comparison:**
+- **LangGraph (v0.x)**: Complex orchestration, ~500 lines/agent, opaque execution
+- **ADK v1.0**: Direct Gemini API, ~200 lines/agent, transparent with reasoning
+- **ADK v2.0**: + LangSmith tracing for full observability
 
 ---
 
