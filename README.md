@@ -1,6 +1,8 @@
 # 📊 InvestmentIQ - AI-Powered Investment Analysis Platform
 
-**Version 2.0** - *ADK Architecture with LangSmith Observability*
+**Version 2.1** - *ADK Architecture with Live Data Integration*
+
+**Last Updated:** October 09, 2025
 
 **Group 2: Capstone Project**
 *Team Members: Mohammed, Rui, Ameya, Amine, Rajesh, Murthy*
@@ -558,7 +560,20 @@ This is a capstone project by Group 2. For questions or feedback:
 
 ## 📝 Version History
 
-### v2.0 (Current) - Oct 8, 2025
+### v2.1 (Current) - Oct 9, 2025
+- 🔧 **FIXED**: Debt-to-Equity ratio field mapping (now shows real values like 2.09 for AAPL)
+- 🔧 **FIXED**: ROE calculation using DuPont formula (Net Margin × Asset Turnover × Financial Leverage)
+- 🔧 **FIXED**: Revenue Growth calculated from YoY revenuePerShare comparison
+- 🔧 **FIXED**: Upside Potential formatting (-0.95% instead of -94.82%)
+- 📊 **IMPROVED**: Analyst counts now display with comma separators (1,522 instead of 1522)
+- ✅ **VERIFIED**: 100% live data integration across all agents:
+  - Financial Analyst: FMP financial ratios ✅
+  - Market Intelligence: FMP analyst ratings & price targets ✅
+  - Qualitative Signal: EODHD news articles ✅
+  - Context Engine: FRED macro data ✅
+- 🎥 **ADDED**: Dashboard demo screencast
+
+### v2.0 - Oct 8, 2025
 - ✨ **NEW**: LangSmith observability integration
 - ✨ **NEW**: Complete tracing for all agents and API calls
 - ✨ **NEW**: Token usage tracking and performance monitoring
@@ -582,7 +597,7 @@ This is a capstone project by Group 2. For questions or feedback:
 
 Academic project - Group 2 Capstone
 Created: October 2025
-Last Updated: Oct 8, 2025 22:30
+Last Updated: October 09, 2025
 
 ---
 
