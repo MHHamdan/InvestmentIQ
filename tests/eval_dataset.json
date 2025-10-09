@@ -1,0 +1,58 @@
+[
+  {
+    "ticker": "AAPL",
+    "company_name": "Apple Inc.",
+    "expected_sentiment": 0.5,
+    "expected_recommendation": "BUY",
+    "rationale": "Strong financials, high margins, solid analyst consensus",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "MSFT",
+    "company_name": "Microsoft Corporation",
+    "expected_sentiment": 0.7,
+    "expected_recommendation": "STRONG BUY",
+    "rationale": "Cloud growth, AI leadership, strong fundamentals",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "NVDA",
+    "company_name": "NVIDIA Corporation",
+    "expected_sentiment": 0.8,
+    "expected_recommendation": "STRONG BUY",
+    "rationale": "AI dominance, excellent growth, strong analyst support",
+    "sector": "Technology"
+  },
+  {
+    "ticker": "AMZN",
+    "company_name": "Amazon.com Inc.",
+    "expected_sentiment": 0.6,
+    "expected_recommendation": "STRONG BUY",
+    "rationale": "AWS growth, e-commerce leader, improving margins",
+    "sector": "Consumer Cyclical"
+  },
+  {
+    "ticker": "META",
+    "company_name": "Meta Platforms Inc.",
+    "expected_sentiment": 0.5,
+    "expected_recommendation": "BUY",
+    "rationale": "AI investments, cost cutting, solid ad revenue",
+    "sector": "Communication Services"
+  },
+  {
+    "ticker": "TSLA",
+    "company_name": "Tesla Inc.",
+    "expected_sentiment": 0.0,
+    "expected_recommendation": "HOLD",
+    "rationale": "Mixed signals, valuation concerns, delivery volatility",
+    "sector": "Consumer Cyclical"
+  },
+  {
+    "ticker": "BA",
+    "company_name": "Boeing Company",
+    "expected_sentiment": -0.3,
+    "expected_recommendation": "HOLD",
+    "rationale": "Quality issues, production delays, negative sentiment",
+    "sector": "Industrials"
+  }
+]
