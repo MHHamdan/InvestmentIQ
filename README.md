@@ -93,7 +93,7 @@ InvestmentIQ/
 │
 ├── tests/                           # Testing & Evaluation
 │   ├── test_adk_orchestrator.py     # Orchestrator test suite
-│   ├── test_results_*.json          # Cached analysis results (5 stocks)
+│   ├── test_results_*.json          # Cached analysis results (6 files: AAPL, MSFT, AMZN, TSLA, BA, + blank)
 │   ├── test_summary.md              # Test results summary
 │   ├── evaluate_agents.py           # Evaluation suite with accuracy metrics
 │   ├── eval_dataset.json            # Ground truth for 7 stocks
