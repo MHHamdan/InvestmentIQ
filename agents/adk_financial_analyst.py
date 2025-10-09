@@ -14,6 +14,7 @@ Business Logic:
 import os
 import json
 import logging
+import time
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from google import genai
@@ -21,6 +22,7 @@ from google import genai
 from tools.fmp_tool import FMPTool
 from core.agent_contracts import AgentOutput, SignalType, Evidence
 from datetime import datetime
+from utils.langsmith_tracer import trace_agent, trace_step, trace_llm_call, log_metrics, log_api_call, log_error
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +54,7 @@ class ADKFinancialAnalyst:
 
         logger.info(f"ADKFinancialAnalyst initialized (FMP: {self.use_fmp})")
 
+    @trace_agent("financial_analyst")
     async def analyze(
         self,
         ticker: str,
@@ -104,6 +107,7 @@ class ADKFinancialAnalyst:
             }
         )
 
+    @trace_llm_call("gemini-2.0-flash")
     async def _analyze_with_gemini(
         self,
         ticker: str,
@@ -115,6 +119,8 @@ class ADKFinancialAnalyst:
 
         Returns structured output with score + reasoning (no black box).
         """
+        # Log metrics being analyzed
+        log_metrics("financial_analyst", metrics)
 
         prompt = f"""Analyze the financial health of {company_name} ({ticker}) based on these metrics:
 
@@ -147,6 +153,7 @@ Provide:
 
         except Exception as e:
             logger.error(f"Gemini analysis failed: {e}")
+            log_error(e, {"ticker": ticker, "agent": "financial_analyst"})
             # Fallback to neutral
             return FinancialAnalysis(
                 sentiment_score=0.0,
@@ -156,13 +163,20 @@ Provide:
                 key_factors=["API error", "No analysis available", "Using neutral score"]
             )
 
+    @trace_step("fetch_fmp_financial_data", step_type="tool")
     async def _fetch_fmp_data(self, ticker: str) -> Dict[str, Any]:
         """Fetch real data from FMP."""
+        start_time = time.time()
         try:
             ratios = await self.fmp_tool.get_financial_ratios(ticker)
+            response_time = time.time() - start_time
+            log_api_call("FMP", f"/ratios/{ticker}", 200, response_time)
             logger.info(f"✅ FMP data fetched for {ticker}")
             return ratios
         except Exception as e:
+            response_time = time.time() - start_time
+            log_api_call("FMP", f"/ratios/{ticker}", 500, response_time)
+            log_error(e, {"ticker": ticker, "api": "FMP"})
             logger.warning(f"FMP fetch failed: {e}, using sample data")
             return self._get_sample_data(ticker)
 

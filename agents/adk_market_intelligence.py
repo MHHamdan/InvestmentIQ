@@ -21,6 +21,7 @@ from google import genai
 from tools.fmp_tool import FMPTool
 from core.agent_contracts import AgentOutput, SignalType, Evidence
 from datetime import datetime
+from utils.langsmith_tracer import trace_agent, trace_step, trace_llm_call, log_metrics, log_api_call, log_error
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,9 @@ class ADKMarketIntelligence:
         self.client = genai.Client(api_key=api_key)
 
         logger.info(f"ADKMarketIntelligence initialized (FMP: {self.use_fmp})")
+
+    @trace_agent("market_intelligence")
+
 
     async def analyze(
         self,
@@ -103,6 +107,9 @@ class ADKMarketIntelligence:
                 "key_factors": analysis.key_factors  # WHAT drove the decision?
             }
         )
+
+    @trace_llm_call("gemini-2.0-flash")
+
 
     async def _analyze_with_gemini(
         self,

@@ -1,13 +1,15 @@
 # 📊 InvestmentIQ - AI-Powered Investment Analysis Platform
 
-**Group 2: Capstone Project**  
+**Version 2.0** - *ADK Architecture with LangSmith Observability*
+
+**Group 2: Capstone Project**
 *Team Members: Mohammed, Rui, Ameya, Amine, Rajesh, Murthy*
 
 ---
 
 ## 🎯 Project Overview
 
-InvestmentIQ is a transparent AI investment analysis platform that leverages **Google Agent Development Kit (ADK)** and **Gemini 2.0 Flash** to provide explainable, data-driven stock recommendations.
+InvestmentIQ is a transparent AI investment analysis platform that leverages **Google Agent Development Kit (ADK)** and **Gemini 2.0 Flash** to provide explainable, data-driven stock recommendations with complete observability.
 
 ### Key Features
 - 🤖 **4 Specialist AI Agents** running in parallel
@@ -15,6 +17,7 @@ InvestmentIQ is a transparent AI investment analysis platform that leverages **G
 - 📊 **Real-time Data** from FMP, EODHD, and FRED APIs
 - 🧮 **Custom Signal Fusion** with weighted averaging
 - 🎨 **Modern Dashboard** built with Streamlit
+- 🔭 **LangSmith Observability** - full tracing and debugging
 
 ---
 
@@ -62,6 +65,7 @@ InvestmentIQ is a transparent AI investment analysis platform that leverages **G
 
 ### Technology Stack
 - **AI**: Google Gemini 2.0 Flash, Google ADK
+- **Observability**: LangSmith (tracing, debugging, monitoring)
 - **Data Sources**: FMP, EODHD, FRED
 - **Backend**: Python 3.12, asyncio
 - **Frontend**: Streamlit, Plotly
@@ -83,6 +87,10 @@ InvestmentIQ/
 ├── apps/                            # User Interface
 │   └── dashboard.py                 # Streamlit dashboard with transparency
 │
+├── utils/                           # Utilities & Observability
+│   ├── langsmith_tracer.py          # LangSmith tracing decorators & functions
+│   └── add_tracing.py               # Batch script to add tracing to agents
+│
 ├── tests/                           # Testing & Results
 │   ├── test_adk_orchestrator.py     # Orchestrator test suite
 │   ├── test_results_*.json          # Cached analysis results
@@ -93,6 +101,7 @@ InvestmentIQ/
 │
 ├── .env.example                     # Environment template with API instructions
 ├── .env                            # Your API keys (not in git)
+├── LANGSMITH_INTEGRATION.md         # LangSmith setup & usage guide
 └── README.md                       # This file
 ```
 
@@ -129,15 +138,19 @@ nano .env  # or use any text editor
 **Required API Keys:**
 1. **FMP** (Financial Modeling Prep) - [Get Free Key](https://site.financialmodelingprep.com/developer/docs)
    - 250 requests/day free tier
-   
+
 2. **EODHD** (News API) - [Get Free Key](https://eodhd.com/register)
    - 20 requests/day free tier
-   
+
 3. **FRED** (Federal Reserve) - [Get Free Key](https://fred.stlouisfed.org/docs/api/api_key.html)
    - Unlimited with registration
-   
+
 4. **Google Gemini** - [Get Free Key](https://aistudio.google.com/apikey)
    - 50 requests/day free tier
+
+5. **LangSmith** (Optional - Observability) - [Get Free Key](https://smith.langchain.com/)
+   - 5,000 traces/month free tier
+   - Enables full tracing, debugging, and monitoring
 
 ### 4. Run the Dashboard
 ```bash
@@ -275,6 +288,37 @@ Visit: http://localhost:8501
 
 ---
 
+### **Utilities** (`/utils/`)
+
+#### `langsmith_tracer.py`
+**Purpose**: LangSmith observability decorators and logging functions
+**Key Features**:
+- `@trace_agent()` - Traces entire agent execution with metadata
+- `@trace_step()` - Traces individual workflow steps (data fetching, processing)
+- `@trace_llm_call()` - Traces Gemini API calls with token usage
+- `log_metrics()` - Logs extracted metrics to LangSmith
+- `log_api_call()` - Logs external API calls (FMP, EODHD, FRED) with response times
+- `log_error()` - Logs errors with context for debugging
+
+**Integration**: Automatically enabled when `LANGSMITH_TRACING=true` in `.env`
+
+**What's Traced**:
+- Agent inputs (ticker, company, sector)
+- Agent outputs (sentiment, confidence, reasoning, key factors)
+- All Gemini prompts and responses
+- API response times and status codes
+- Metric extraction steps
+- Error stack traces with context
+
+**View Traces**: https://smith.langchain.com/o/default/projects/p/investmentiq-adk
+
+#### `add_tracing.py`
+**Purpose**: Batch utility to add LangSmith tracing to agents
+**Usage**: Automatically adds decorators and import statements to agent files
+**When to use**: When adding new agents or updating tracing patterns
+
+---
+
 ### **Tests** (`/tests/`)
 
 #### `test_adk_orchestrator.py`
@@ -299,14 +343,15 @@ Visit: http://localhost:8501
 ## 🔧 API Configuration
 
 ### Free Tier Limits
-| API      | Free Tier Limit       | Usage in Project                    |
-|----------|-----------------------|-------------------------------------|
-| FMP      | 250 requests/day      | ~4 requests per stock analysis      |
-| EODHD    | 20 requests/day       | 1 request per stock                 |
-| FRED     | Unlimited             | ~3 requests per analysis            |
-| Gemini   | 50 requests/day       | 4 requests per stock (one per agent)|
+| API       | Free Tier Limit       | Usage in Project                    |
+|-----------|-----------------------|-------------------------------------|
+| FMP       | 250 requests/day      | ~4 requests per stock analysis      |
+| EODHD     | 20 requests/day       | 1 request per stock                 |
+| FRED      | Unlimited             | ~3 requests per analysis            |
+| Gemini    | 50 requests/day       | 4 requests per stock (one per agent)|
+| LangSmith | 5,000 traces/month    | 5 traces per stock (orchestrator + 4 agents) |
 
-**Note**: With Gemini's 50 req/day limit, you can analyze ~12 stocks per day on free tier.
+**Note**: With Gemini's 50 req/day limit, you can analyze ~12 stocks per day on free tier. LangSmith allows ~1,000 stocks/month on free tier.
 
 ---
 
@@ -362,6 +407,54 @@ Every agent provides:
 
 ---
 
+## 🔭 LangSmith Observability (v2.0 Feature)
+
+### What is LangSmith?
+LangSmith provides complete observability for AI agents - see exactly what happens during each analysis.
+
+### What's Traced?
+Every analysis creates a hierarchical trace showing:
+```
+📊 InvestmentIQ Analysis (AAPL)
+├── 🔗 Orchestrator (parallel execution)
+│   ├── 🔗 Financial Analyst Agent
+│   │   ├── 🔧 Fetch FMP Financial Data (0.245s)
+│   │   ├── 📊 Extract Metrics (6 metrics)
+│   │   └── 🤖 Gemini Analysis (tokens: 150/200)
+│   ├── 🔗 Market Intelligence Agent
+│   │   ├── 🔧 Fetch FMP Analyst Data (0.312s)
+│   │   └── 🤖 Gemini Analysis (tokens: 180/220)
+│   ├── 🔗 Qualitative Signal Agent
+│   │   ├── 🔧 Fetch EODHD News (0.421s)
+│   │   └── 🤖 Gemini Analysis (tokens: 200/250)
+│   └── 🔗 Context Engine Agent
+│       ├── 🔧 Fetch FRED Macro Data (0.189s)
+│       └── 🤖 Gemini Analysis (tokens: 160/190)
+└── 🧮 Signal Fusion (weighted average)
+```
+
+### Benefits
+1. **Debugging** - See exact prompts sent to Gemini and responses received
+2. **Performance** - Identify slow API calls and bottlenecks
+3. **Cost Tracking** - Monitor Gemini token usage per analysis
+4. **Error Analysis** - Full stack traces with context for failures
+5. **Transparency** - Audit trail of all agent decisions
+
+### How to Enable
+Already configured in `.env`:
+```bash
+LANGSMITH_API_KEY=your_key_here
+LANGSMITH_PROJECT=investmentiq-adk
+LANGSMITH_TRACING=true
+```
+
+**View Traces**: https://smith.langchain.com/
+
+### Documentation
+See [LANGSMITH_INTEGRATION.md](LANGSMITH_INTEGRATION.md) for complete setup guide and usage examples.
+
+---
+
 ## 🔄 Migration from LangGraph
 
 This project evolved from a LangGraph-based architecture to Google ADK:
@@ -371,6 +464,8 @@ This project evolved from a LangGraph-based architecture to Google ADK:
 2. ✅ Direct Gemini API with structured outputs (more reliable)
 3. ✅ Simpler codebase (~200 lines per agent vs. ~500)
 4. ✅ Better transparency with Pydantic schemas
+
+**v2.0 Enhancement**: Added LangSmith observability for complete tracing
 
 **Legacy code**: Available in `/reference/` folder
 
@@ -385,17 +480,37 @@ This is a capstone project by Group 2. For questions or feedback:
 
 ---
 
+## 📝 Version History
+
+### v2.0 (Current) - Oct 8, 2025
+- ✨ **NEW**: LangSmith observability integration
+- ✨ **NEW**: Complete tracing for all agents and API calls
+- ✨ **NEW**: Token usage tracking and performance monitoring
+- 🎨 Modern dashboard with Apple/Google-inspired UI
+- 🔧 Fixed GDP calculation bug (now shows growth rate)
+- 📊 Intelligent metric formatting with $, %, decimals
+- 🔍 Enhanced transparency with reasoning and key factors
+
+### v1.0 - Oct 6, 2025
+- 🚀 Initial ADK architecture implementation
+- 🤖 4 specialist agents with Gemini 2.0 Flash
+- 📊 Custom signal fusion engine
+- 📈 Real-time data from FMP, EODHD, FRED APIs
+
+---
+
 ## 📝 License
 
-Academic project - Group 2 Capstone  
-Created: October 2025  
-Last Updated: Oct 8, 2025 21:29
+Academic project - Group 2 Capstone
+Created: October 2025
+Last Updated: Oct 8, 2025 22:30
 
 ---
 
 ## 🙏 Acknowledgments
 
 - **Google Gemini** for AI capabilities
+- **LangSmith** for observability and debugging
 - **FMP, EODHD, FRED** for financial data
 - **Streamlit** for rapid dashboard development
 - **Group 2 Team** for collaborative development

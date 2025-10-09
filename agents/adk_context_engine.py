@@ -23,6 +23,7 @@ import aiohttp
 from core.agent_contracts import AgentOutput, SignalType, Evidence
 from tools.fmp_tool import FMPTool
 from datetime import datetime
+from utils.langsmith_tracer import trace_agent, trace_step, trace_llm_call, log_metrics, log_api_call, log_error
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ class ADKContextEngine:
         self.client = genai.Client(api_key=api_key)
 
         logger.info(f"ADKContextEngine initialized (FMP: {self.fmp_tool.enabled}, FRED: {bool(self.fred_api_key)})")
+
+    @trace_agent("context_engine")
+
 
     async def analyze(
         self,
@@ -106,6 +110,9 @@ class ADKContextEngine:
                 "sector_outlook": analysis.sector_outlook
             }
         )
+
+    @trace_llm_call("gemini-2.0-flash")
+
 
     async def _analyze_with_gemini(
         self,

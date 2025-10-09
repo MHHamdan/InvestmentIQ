@@ -21,6 +21,7 @@ import httpx
 
 from core.agent_contracts import AgentOutput, SignalType, Evidence
 from datetime import datetime
+from utils.langsmith_tracer import trace_agent, trace_step, trace_llm_call, log_metrics, log_api_call, log_error
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ class ADKQualitativeSignal:
         self.client = genai.Client(api_key=api_key)
 
         logger.info(f"ADKQualitativeSignal initialized (mode: {'live' if self.live_mode else 'sample'})")
+
+    @trace_agent("qualitative_signal")
+
 
     async def analyze(
         self,
@@ -118,6 +122,9 @@ class ADKQualitativeSignal:
                 "news_count": len(news_articles)
             }
         )
+
+    @trace_llm_call("gemini-2.0-flash")
+
 
     async def _analyze_with_gemini(
         self,

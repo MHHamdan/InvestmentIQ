@@ -143,6 +143,9 @@ tmp/
 cache/
 .cache/
 
+# Legacy/Reference code (LangGraph implementation)
+reference/
+
 # Runtime data
 *.pid
 *.seed

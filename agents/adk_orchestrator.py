@@ -13,6 +13,7 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from utils.langsmith_tracer import trace_agent, trace_step, trace_llm_call, log_metrics, log_api_call, log_error
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -56,6 +57,9 @@ class ADKOrchestrator:
         )
 
         logger.info("✅ ADK Orchestrator initialized with 4 agents")
+
+    @trace_agent("orchestrator")
+
 
     async def analyze(
         self,
