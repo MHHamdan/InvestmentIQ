@@ -326,7 +326,7 @@ Visit: http://localhost:8501
 ### **Tests** (`/tests/`)
 
 #### `test_adk_orchestrator.py`
-**Purpose**: Integration testing for orchestrator and agents  
+**Purpose**: Integration testing for orchestrator and agents
 **Features**:
 - Tests full pipeline for multiple tickers
 - Displays transparent output (metrics, reasoning, key factors)
@@ -341,6 +341,55 @@ Visit: http://localhost:8501
 | AAPL   | +0.230 | BUY            |
 | TSLA   | +0.125 | HOLD           |
 | BA     | -0.162 | HOLD (Bearish) |
+
+---
+
+#### `evaluate_agents.py` ⭐ NEW
+**Purpose**: Comprehensive agent evaluation suite with LangSmith integration
+**Features**:
+- Ground truth dataset for 7 stocks (AAPL, MSFT, NVDA, AMZN, META, TSLA, BA)
+- Automated accuracy measurement with 3 key metrics:
+  - **Sentiment MAE** (Mean Absolute Error) - measures prediction accuracy
+  - **Directional Accuracy** - % of sentiment directions matched (positive/negative/neutral)
+  - **Recommendation Match** - % of recommendations matched (BUY/HOLD/SELL)
+- Pass/fail thresholds: MAE < 0.30, Directional ≥ 70%, Recommendation ≥ 60%
+- LangSmith tracing for all evaluation runs
+- JSON output with detailed results
+
+**Evaluation Results** (as of Oct 8, 2025):
+| Metric | Result | Threshold | Status |
+|--------|--------|-----------|--------|
+| Sentiment MAE | 0.295 | < 0.30 | ✅ PASS |
+| Directional Accuracy | 57.1% | ≥ 70% | ❌ FAIL |
+| Recommendation Match | 71.4% | ≥ 60% | ✅ PASS |
+| **Overall** | **2/3** | **3/3** | **⚠️ NEEDS IMPROVEMENT** |
+
+**Key Findings**:
+- ✅ Strong performance on stocks with full API access (AAPL, MSFT, NVDA - all correct)
+- ⚠️ API quota limitations affected 4/7 stocks (defaulted to HOLD/neutral)
+- 🎯 Accurate when data available - MAE 0.295 is excellent
+- 🔧 Directional accuracy impacted by Gemini free tier limit (10 req/min)
+
+**Usage**:
+```bash
+python tests/evaluate_agents.py
+```
+
+**Full Report**: See [tests/EVALUATION_REPORT.md](tests/EVALUATION_REPORT.md) for comprehensive analysis and recommendations
+
+---
+
+#### `eval_dataset.json`
+**Purpose**: Ground truth dataset with expected sentiments for evaluation
+**Content**: 7 stocks with analyst-consensus-based expected sentiments, recommendations, and rationales
+
+#### `EVALUATION_REPORT.md`
+**Purpose**: Comprehensive evaluation analysis and findings
+**Content**:
+- Detailed results table with predictions vs. expected
+- Strengths and limitations analysis
+- API quota impact assessment
+- Recommendations for v2.1, v2.2, v3.0 improvements
 
 ---
 
@@ -361,6 +410,7 @@ Visit: http://localhost:8501
 
 ## 🧪 Running Tests
 
+### Integration Tests
 ```bash
 # Run orchestrator test on a single ticker
 python tests/test_adk_orchestrator.py
@@ -369,6 +419,22 @@ python tests/test_adk_orchestrator.py
 # 1. Run all 4 agents in parallel
 # 2. Display transparent analysis
 # 3. Save results to tests/test_results_TICKER.json
+```
+
+### Agent Evaluation ⭐ NEW
+```bash
+# Run comprehensive evaluation suite
+python tests/evaluate_agents.py
+
+# The evaluation will:
+# 1. Analyze 7 stocks against ground truth
+# 2. Calculate 3 accuracy metrics (MAE, Directional, Recommendation)
+# 3. Trace all runs in LangSmith
+# 4. Save results to tests/eval_results.json
+# 5. Generate pass/fail report
+
+# View detailed report
+cat tests/EVALUATION_REPORT.md
 ```
 
 ---
@@ -492,6 +558,9 @@ This is a capstone project by Group 2. For questions or feedback:
 - ✨ **NEW**: LangSmith observability integration
 - ✨ **NEW**: Complete tracing for all agents and API calls
 - ✨ **NEW**: Token usage tracking and performance monitoring
+- ✨ **NEW**: Agent evaluation suite with 3 accuracy metrics
+- 📊 Evaluation results: 71.4% recommendation accuracy, MAE 0.295
+- 📈 Ground truth dataset for 7 major stocks
 - 🎨 Modern dashboard with Apple/Google-inspired UI
 - 🔧 Fixed GDP calculation bug (now shows growth rate)
 - 📊 Intelligent metric formatting with $, %, decimals
