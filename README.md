@@ -91,10 +91,14 @@ InvestmentIQ/
 │   ├── langsmith_tracer.py          # LangSmith tracing decorators & functions
 │   └── add_tracing.py               # Batch script to add tracing to agents
 │
-├── tests/                           # Testing & Results
+├── tests/                           # Testing & Evaluation
 │   ├── test_adk_orchestrator.py     # Orchestrator test suite
-│   ├── test_results_*.json          # Cached analysis results
-│   └── test_summary.md              # Test results summary
+│   ├── test_results_*.json          # Cached analysis results (5 stocks)
+│   ├── test_summary.md              # Test results summary
+│   ├── evaluate_agents.py           # Evaluation suite with accuracy metrics
+│   ├── eval_dataset.json            # Ground truth for 7 stocks
+│   ├── eval_results.json            # Evaluation output with metrics
+│   └── EVALUATION_REPORT.md         # Comprehensive evaluation analysis
 │
 ├── core/                            # Core contracts & fusion
 │   ├── agent_contracts.py           # Pydantic models for agent outputs
