@@ -405,12 +405,6 @@ The direct API approach resulted in:
 
 ---
 
-## Quote from Developer
-
-> "Thanks for calling that out. Yes, I originally planned for ADK, but ran into API calls issue and InMemoryRunner issues and couldn't figure it out. Specifically, when one agent fails in the ADK orchestrator, then the entire InMemoryRunner crashes. Some of it is due to our free APIs/rate limits, and some related to code bugs, and a few race conditions when the agents are trying to communicate simultaneously. I stripped it off and used Direct Gemini API to get better control."
-
----
-
 ## References
 
 - [MIGRATE_README.md](MIGRATE_README.md) - Original migration plan and LangGraph issues
