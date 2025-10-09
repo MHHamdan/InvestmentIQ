@@ -198,7 +198,7 @@ class FMPTool:
         """
         try:
             endpoint = "/ratios"
-            params = {"symbol": ticker.upper()}
+            params = {"symbol": ticker.upper(), "limit": 2}  # Get 2 periods to calc revenue growth
             data = await self._make_request(endpoint, params)
 
             if not data or len(data) == 0:
@@ -207,15 +207,28 @@ class FMPTool:
             # Get most recent period
             latest = data[0]
 
-            # Map FMP fields to our format
+            # Calculate revenue growth from revenuePerShare (YoY change)
+            revenue_growth = 0
+            if len(data) >= 2:
+                current_rev = latest.get("revenuePerShare", 0)
+                prior_rev = data[1].get("revenuePerShare", 0)
+                if current_rev and prior_rev and prior_rev != 0:
+                    revenue_growth = (current_rev - prior_rev) / prior_rev
+
+            # Calculate ROE using DuPont formula: ROE = Net Margin * Asset Turnover * Financial Leverage
+            net_margin = latest.get("netProfitMargin", 0)
+            asset_turnover = latest.get("assetTurnover", 0)
+            financial_leverage = latest.get("financialLeverageRatio", 0)
+            roe = net_margin * asset_turnover * financial_leverage if all([net_margin, asset_turnover, financial_leverage]) else 0
+
             return {
                 "ticker": ticker.upper(),
-                "revenue_growth": latest.get("revenueGrowth", 0),
+                "revenue_growth": revenue_growth,  # Calculated from YoY revenuePerShare
                 "gross_margin": latest.get("grossProfitMargin", 0),
                 "operating_margin": latest.get("operatingProfitMargin", 0),
                 "net_margin": latest.get("netProfitMargin", 0),
-                "debt_to_equity": latest.get("debtEquityRatio", 0),
-                "roe": latest.get("returnOnEquity", 0),
+                "debt_to_equity": latest.get("debtToEquityRatio", 0),  # Fixed: was debtEquityRatio
+                "roe": roe,  # Calculated using DuPont formula
                 "current_ratio": latest.get("currentRatio", 0),
                 "quick_ratio": latest.get("quickRatio", 0),
                 "date": latest.get("date", ""),
